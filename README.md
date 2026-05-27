@@ -19,6 +19,7 @@
 - **Destaques coloridos** — use `==texto==` para realçar trechos com cor de destaque configurável
 - **Quebras de página** — insira `<!-- pagebreak -->` para controlar a paginação no PDF
 - **Persistência local** — todas as configurações são salvas automaticamente no `localStorage`
+- **Sobre o Desenvolvedor** — modal elegante e premium contendo a bio e links rápidos de redes sociais do desenvolvedor
 
 ---
 
@@ -214,6 +215,7 @@ markdown-render-kit/
 │           ├── Slider.jsx
 │           ├── Header.jsx             # Barra superior com botões de ação
 │           ├── SettingsPanel.jsx      # Painel de configurações colapsável
+│           ├── AboutModal.jsx         # Modal premium "Sobre o Desenvolvedor"
 │           ├── EditorPane.jsx         # Textarea do Markdown
 │           └── PreviewPane.jsx        # Preview HTML renderizado
 │
