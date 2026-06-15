@@ -2,6 +2,8 @@
 
 > Editor Markdown avançado com preview ao vivo, syntax highlighting, diagramas Mermaid e exportação para PDF — tudo no navegador.
 
+⚡ **Experimente online:** [markdownrenderkit.onrender.com](https://markdownrenderkit.onrender.com/)
+
 ![MarkdownRenderKit — Editor e Preview](docs/main-view.png)
 
 ---
