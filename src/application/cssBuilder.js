@@ -386,15 +386,16 @@ export function buildCss(settings, forPrint = false) {
 
     /* ── Mermaid diagrams ── */
     .formatted-document .mermaid-block {
-      margin: 0.8em 0;
-      padding: 1em 0.7em;
-      border-radius: 10px;
+      margin: 0.8em auto;
+      display: table; /* Shrink to fit the SVG width perfectly */
+      padding: 1.2em 1.6em;
+      border-radius: 12px;
       border: 1px solid var(--border);
       background: var(--code-bg);
-      overflow-x: auto;
       text-align: center;
       break-inside: avoid;
       page-break-inside: avoid;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
     }
 
     .formatted-document .mermaid-block svg {

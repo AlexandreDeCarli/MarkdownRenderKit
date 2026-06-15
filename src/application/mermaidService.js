@@ -28,6 +28,8 @@ export function buildMermaidThemeVars(settings, darkPaper) {
   return {
     darkMode: darkPaper,
     theme: "base",
+    flowchart: { htmlLabels: true, padding: 20 },
+    securityLevel: "loose",
     themeVariables: {
       primaryColor: primaryBg,
       primaryBorderColor: primaryBorder,
@@ -48,7 +50,7 @@ export function buildMermaidThemeVars(settings, darkPaper) {
       edgeLabelBackground: codeBg,
       nodeTextColor: textColor,
       fontSize: "14px",
-      fontFamily: settings.bodyFont,
+      fontFamily: "system-ui, -apple-system, sans-serif",
     },
   };
 }
