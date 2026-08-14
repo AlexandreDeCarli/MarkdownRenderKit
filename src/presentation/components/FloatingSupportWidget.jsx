@@ -1,23 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Copy, Check, QrCode, ExternalLink, X, Heart, Coffee } from "lucide-react";
+import { Copy, Check, QrCode, ExternalLink, X, Heart, Coffee, Smartphone, ChevronDown } from "lucide-react";
 
 /**
  * Unified Floating Support Widget (PIX + Buy Me a Coffee)
- * Incorpora os mesmos controles interativos do widget oficial do Buy Me a Coffee (checkout ao vivo via iframe e QR Code)
- * juntamente com o PIX (QR Code e chave copiável).
+ * Interface nativa, compacta e ultra-rápida que reúne PIX e Buy Me a Coffee sem iframes pesados ou barras de rolagem estranhas.
  */
 export default function FloatingSupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("pix"); // 'pix' | 'bmc' | 'bmc-qr'
+  const [activeTab, setActiveTab] = useState("pix"); // 'pix' | 'bmc'
   const [copiedPix, setCopiedPix] = useState(false);
+  const [showPixQr, setShowPixQr] = useState(false);
+  const [showBmcQr, setShowBmcQr] = useState(false);
+  const [coffees, setCoffees] = useState(1);
   const [showBubble, setShowBubble] = useState(true);
   const widgetRef = useRef(null);
 
   const PIX_KEY = "29c45fd6-e6e0-4708-9b49-3b049cde040f";
-  const BMC_ID = "alexandredecarli";
-  const BMC_URL = `https://buymeacoffee.com/widget/page/${BMC_ID}?description=Support%20me%20on%20Buy%20me%20a%20coffee!&color=%235F7FFF`;
+  const BMC_USER = "alexandredecarli";
 
-  // Controla a exibição inicial do balão de mensagem "Valeeeu demais!"
+  // Fecha o balão de boas-vindas após 7s
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowBubble(false);
@@ -25,7 +26,7 @@ export default function FloatingSupportWidget() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fecha o popover ao clicar fora
+  // Fecha ao clicar fora do componente
   useEffect(() => {
     function handleClickOutside(event) {
       if (widgetRef.current && !widgetRef.current.contains(event.target)) {
@@ -50,9 +51,13 @@ export default function FloatingSupportWidget() {
     }
   };
 
+  const getBmcUrl = () => {
+    return `https://buymeacoffee.com/${BMC_USER}`;
+  };
+
   return (
     <div ref={widgetRef} className="fixed bottom-5 right-5 z-50 font-sans select-none">
-      {/* Floating Speech Bubble Tooltip ("Valeeeu demais!") */}
+      {/* Floating Speech Bubble ("Valeeeu demais!") */}
       {showBubble && !isOpen && (
         <div
           onClick={() => setIsOpen(true)}
@@ -66,23 +71,19 @@ export default function FloatingSupportWidget() {
 
       {/* Popover Card */}
       {isOpen && (
-        <div
-          className={`absolute bottom-16 right-0 max-h-[85vh] rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col overflow-hidden transition-all duration-300 ${
-            activeTab === "bmc" ? "w-[360px] sm:w-[420px] h-[580px] sm:h-[620px]" : "w-[340px] sm:w-[390px] p-5"
-          }`}
-        >
+        <div className="absolute bottom-16 right-0 w-[330px] sm:w-[360px] rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col transition-all duration-300">
           {/* Top Gradient Bar */}
-          <div className="h-1.5 shrink-0 bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400" />
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400 rounded-t-3xl" />
 
-          {/* Popover Header */}
-          <div className={`flex items-center justify-between border-b border-slate-100 ${activeTab === "bmc" ? "px-5 py-3.5 bg-slate-50/80" : "pb-3"}`}>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#5F7FFF] to-indigo-600 text-white shadow-sm">
-                <Heart className="h-4 w-4 fill-white animate-pulse" />
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-400 shadow-sm">
+                <Heart className="h-4 w-4 fill-rose-500 text-rose-500 animate-pulse" />
               </div>
               <div>
                 <h3 className="text-sm font-bold font-outfit text-slate-900 leading-tight">Apoie o Projeto</h3>
-                <p className="text-[11px] font-medium text-slate-500">Valeeeu demais! ☕✨</p>
+                <p className="text-[11px] font-medium text-slate-500">Escolha como prefere apoiar:</p>
               </div>
             </div>
 
@@ -96,12 +97,12 @@ export default function FloatingSupportWidget() {
             </button>
           </div>
 
-          {/* Segmented Control / Tabs */}
-          <div className={`${activeTab === "bmc" ? "px-5 pt-3 pb-2 bg-slate-50/50 border-b border-slate-100" : "mt-3.5"} flex p-1 bg-slate-100/90 rounded-2xl border border-slate-200/60 shrink-0`}>
+          {/* Segmented Tabs: [ PIX ] & [ Buy Me ] */}
+          <div className="mt-3.5 flex p-1 bg-slate-100/90 rounded-2xl border border-slate-200/60 shrink-0">
             <button
               type="button"
               onClick={() => setActiveTab("pix")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                 activeTab === "pix"
                   ? "bg-white text-teal-900 shadow-xs border border-teal-200/60"
                   : "text-slate-600 hover:text-slate-900"
@@ -116,151 +117,156 @@ export default function FloatingSupportWidget() {
             <button
               type="button"
               onClick={() => setActiveTab("bmc")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                 activeTab === "bmc"
-                  ? "bg-white text-indigo-900 shadow-xs border border-indigo-200/60"
+                  ? "bg-white text-indigo-950 shadow-xs border border-indigo-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Coffee className="h-3.5 w-3.5 text-[#5F7FFF]" />
-              <span>Checkout BMC</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("bmc-qr")}
-              className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                activeTab === "bmc-qr"
-                  ? "bg-white text-amber-900 shadow-xs border border-amber-200/60"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <QrCode className="h-3.5 w-3.5 text-amber-500" />
-              <span>QR BMC</span>
+              <span>Buy Me a Coffee</span>
             </button>
           </div>
 
-          {/* Tab Content: PIX */}
+          {/* TAB 1: PIX */}
           {activeTab === "pix" && (
-            <div className="mt-3.5 flex flex-col items-center gap-3 animate-fade-in overflow-y-auto custom-scrollbar">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-teal-950 font-outfit">
-                <QrCode className="h-3.5 w-3.5 text-[#00bdae]" />
-                <span>Escaneie o QR Code no seu banco</span>
-              </div>
-
-              {/* QR Code PIX */}
-              <div className="p-2.5 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-center">
-                <img
-                  src="/pix-qrcode.png"
-                  alt="QR Code PIX - Alexandre De Carli"
-                  className="w-44 h-44 rounded-lg object-contain select-none"
-                  loading="eager"
-                />
-              </div>
-
-              {/* Chave PIX Container */}
-              <div className="w-full space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-left">
-                  Chave aleatória (copia e cola):
+            <div className="mt-3.5 flex flex-col gap-3 animate-fade-in">
+              <div className="p-3 bg-teal-50/50 rounded-2xl border border-teal-200/70 flex flex-col gap-2">
+                <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">
+                  Chave PIX (Aleatória)
                 </span>
-                <div className="flex items-center gap-2 p-1.5 pl-3 bg-slate-50 rounded-xl border border-slate-200/80 shadow-inner">
-                  <span className="font-mono text-[11px] text-slate-700 truncate select-all flex-1" title={PIX_KEY}>
-                    {PIX_KEY}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleCopyPix}
-                    className={`shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs active:scale-95 ${
-                      copiedPix
-                        ? "bg-emerald-600 text-white shadow-emerald-600/20"
-                        : "bg-slate-900 text-white hover:bg-slate-800"
-                    }`}
-                    title="Copiar chave PIX"
-                  >
-                    {copiedPix ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-200" />
-                        <span>Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        <span>Copiar</span>
-                      </>
-                    )}
-                  </button>
+
+                <div className="p-2 bg-white rounded-xl border border-teal-200/80 font-mono text-[11px] text-slate-800 break-all select-all shadow-2xs">
+                  {PIX_KEY}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleCopyPix}
+                  className={`w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs active:scale-[0.98] ${
+                    copiedPix
+                      ? "bg-emerald-600 text-white shadow-emerald-600/20"
+                      : "bg-teal-700 hover:bg-teal-800 text-white"
+                  }`}
+                >
+                  {copiedPix ? (
+                    <>
+                      <Check className="h-4 w-4 text-emerald-200" />
+                      <span>Chave PIX Copiada!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Copiar Chave PIX</span>
+                    </>
+                  )}
+                </button>
               </div>
 
-              <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-                Qualquer contribuição apoia o desenvolvimento contínuo do projeto. Muito obrigado! 💙
+              {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowPixQr(!showPixQr)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 py-1 px-2 rounded-lg hover:bg-slate-100/80 transition-colors cursor-pointer"
+                >
+                  <Smartphone className="h-3.5 w-3.5 text-teal-600" />
+                  <span>{showPixQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showPixQr ? "rotate-180" : ""}`} />
+                </button>
+
+                {showPixQr && (
+                  <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in">
+                    <img
+                      src="/pix-qrcode.png"
+                      alt="QR Code PIX"
+                      className="w-40 h-40 rounded-lg object-contain select-none"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">Abra o app do banco e escaneie o código</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                Qualquer contribuição apoia o desenvolvimento contínuo e open-source. Valeu demais! 💙
               </p>
             </div>
           )}
 
-          {/* Tab Content: Buy Me a Coffee Live Embedded Checkout (Do Script Oficial) */}
+          {/* TAB 2: BUY ME A COFFEE (Controles Nativos Redesenhados) */}
           {activeTab === "bmc" && (
-            <div className="flex-1 w-full relative bg-slate-50 flex flex-col">
-              <iframe
-                id="bmc-iframe"
-                src={BMC_URL}
-                title="Buy Me a Coffee Widget"
-                allow="publickey-credentials-get *; payment *"
-                className="w-full flex-1 border-0 bg-white"
-              />
-              <div className="px-4 py-2 bg-white border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                <span>Não carregou o checkout?</span>
+            <div className="mt-3.5 flex flex-col gap-3 animate-fade-in">
+              <div className="p-3.5 bg-gradient-to-b from-indigo-50/60 to-white rounded-2xl border border-indigo-100/90 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-950 font-outfit">Quantos cafés?</span>
+                  <span className="text-xs font-black text-[#5F7FFF] font-outfit">${coffees * 5} USD</span>
+                </div>
+
+                {/* Seletor de Cafés ($5 cada) */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 3, 5].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setCoffees(count)}
+                      className={`flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                        coffees === count
+                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      <span>☕</span>
+                      <span>{count} ({`$${count * 5}`})</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Botão de Ação Direta */}
                 <a
-                  href={`https://buymeacoffee.com/${BMC_ID}`}
+                  href={getBmcUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold text-[#5F7FFF] hover:underline flex items-center gap-1"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5F7FFF] hover:bg-[#4d6feb] text-white py-2.5 px-4 text-xs font-bold shadow-md shadow-[#5F7FFF]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
                 >
-                  <span>Abrir no site</span>
-                  <ExternalLink className="h-3 w-3" />
+                  <Coffee className="h-4 w-4" />
+                  <span>Apoiar ${coffees * 5} no Buy Me a Coffee</span>
+                  <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                 </a>
               </div>
-            </div>
-          )}
 
-          {/* Tab Content: Buy Me a Coffee QR Code Oficial */}
-          {activeTab === "bmc-qr" && (
-            <div className="mt-3.5 flex flex-col items-center gap-3 animate-fade-in overflow-y-auto custom-scrollbar">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950 font-outfit">
-                <QrCode className="h-3.5 w-3.5 text-amber-500" />
-                <span>Escaneie o QR Code do Buy Me a Coffee</span>
+              {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowBmcQr(!showBmcQr)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-700 py-1 px-2 rounded-lg hover:bg-slate-100/80 transition-colors cursor-pointer"
+                >
+                  <Smartphone className="h-3.5 w-3.5 text-[#5F7FFF]" />
+                  <span>{showBmcQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showBmcQr ? "rotate-180" : ""}`} />
+                </button>
+
+                {showBmcQr && (
+                  <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in">
+                    <img
+                      src="/bmc-qrcode.png"
+                      alt="QR Code Buy Me a Coffee"
+                      className="w-40 h-40 rounded-lg object-contain select-none"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">Escaneie com a câmera do celular</span>
+                  </div>
+                )}
               </div>
 
-              {/* QR Code BMC Oficial */}
-              <div className="p-2.5 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-center">
-                <img
-                  src="/bmc-qrcode.png"
-                  alt="QR Code Buy Me a Coffee - Alexandre De Carli"
-                  className="w-44 h-44 rounded-lg object-contain select-none"
-                  loading="eager"
-                />
-              </div>
-
-              <a
-                href={`https://buymeacoffee.com/${BMC_ID}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5F7FFF] hover:bg-[#4d6feb] text-white px-4 py-2.5 text-xs font-bold shadow-md shadow-[#5F7FFF]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer mt-1"
-              >
-                <Coffee className="h-4 w-4" />
-                <span>Abrir Perfil no Buy Me a Coffee</span>
-                <ExternalLink className="h-3 w-3 opacity-70" />
-              </a>
-
-              <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-                Apoie com cartão internacional, Apple Pay ou PayPal. ☕✨
+              <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                Cartão de crédito internacional, Apple Pay ou PayPal. ☕✨
               </p>
             </div>
           )}
         </div>
       )}
 
-      {/* Floating Action Trigger Button (Estilo Oficial BMC com Toque PIX) */}
+      {/* Floating Action Button */}
       <button
         type="button"
         id="btn-floating-support"
@@ -280,7 +286,7 @@ export default function FloatingSupportWidget() {
           </span>
         </div>
 
-        <span className="font-outfit tracking-tight text-sm">Buy me a coffee / PIX</span>
+        <span className="font-outfit tracking-tight text-sm">Buy Me & PIX</span>
 
         <span className="flex h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
       </button>
