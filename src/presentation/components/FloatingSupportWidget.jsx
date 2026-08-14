@@ -3,9 +3,8 @@ import { Copy, Check, QrCode, ExternalLink, X, Heart, Coffee, Smartphone, Chevro
 
 /**
  * Unified Floating Support Widget (PIX + Buy Me a Coffee)
- * Reproduz nativamente todos os controles interativos do Buy Me a Coffee
- * (seletor de cafés, valor dinâmico, campo de nome, mensagem e opção privada)
- * juntamente com o PIX (chave copiável e QR code).
+ * Reproduz os controles em Reais (R$ 5, R$ 10, Outro R$ __) com formulário nativo,
+ * chave PIX copiável e QR Codes sob demanda.
  */
 export default function FloatingSupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,10 +14,9 @@ export default function FloatingSupportWidget() {
   const [showBmcQr, setShowBmcQr] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
 
-  // Controles do Buy Me a Coffee (reproduzindo exatamente o formulário do BMC)
-  const [coffeeCount, setCoffeeCount] = useState(1);
-  const [isCustom, setIsCustom] = useState(false);
-  const [customAmount, setCustomAmount] = useState(10);
+  // Seletor de Valores em Reais (R$ 5, R$ 10, Outro R$ __)
+  const [selectedAmount, setSelectedAmount] = useState(5); // 5 | 10 | 'custom'
+  const [customBrl, setCustomBrl] = useState("20");
   const [donorName, setDonorName] = useState("");
   const [donorMessage, setDonorMessage] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -27,10 +25,8 @@ export default function FloatingSupportWidget() {
 
   const PIX_KEY = "29c45fd6-e6e0-4708-9b49-3b049cde040f";
   const BMC_USER = "alexandredecarli";
-  const COFFEE_UNIT_PRICE = 5; // $5 USD por café
 
-  const totalCoffees = isCustom ? (parseInt(customAmount, 10) || 1) : coffeeCount;
-  const totalPrice = totalCoffees * COFFEE_UNIT_PRICE;
+  const currentAmount = selectedAmount === "custom" ? (Number(customBrl) || 5) : selectedAmount;
 
   // Controla o balão de mensagem "Valeeeu demais!"
   useEffect(() => {
@@ -67,7 +63,6 @@ export default function FloatingSupportWidget() {
 
   const handleBmcSubmit = (e) => {
     e.preventDefault();
-    // Monta URL direta do Buy Me a Coffee
     const url = `https://buymeacoffee.com/${BMC_USER}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -92,7 +87,7 @@ export default function FloatingSupportWidget() {
           {/* Top Gradient Bar - 100% Flush de ponta a ponta */}
           <div className="h-1.5 w-full bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400 shrink-0" />
 
-          {/* Conteúdo com scroll interno suave quando expandir QR code */}
+          {/* Conteúdo com scroll interno suave */}
           <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -217,48 +212,53 @@ export default function FloatingSupportWidget() {
               </div>
             )}
 
-            {/* ABA 2: BUY ME A COFFEE (Reprodução Completa dos Controles do BMC) */}
+            {/* ABA 2: BUY ME A COFFEE (Controles em Reais R$ 5, R$ 10, Outro R$ __) */}
             {activeTab === "bmc" && (
               <form onSubmit={handleBmcSubmit} className="mt-3.5 flex flex-col gap-3 animate-fade-in">
-                {/* Seção dos Controles de Café */}
+                {/* Seção dos Controles em Reais */}
                 <div className="p-3.5 bg-gradient-to-b from-indigo-50/70 to-white rounded-2xl border border-indigo-100/90 flex flex-col gap-3">
-                  {/* Seletor de Quantidade com Ícone e Valor */}
+                  {/* Cabeçalho do Seletor de Valor */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-base">☕</span>
-                      <span className="text-xs font-bold text-slate-800 font-outfit">Compre um café:</span>
+                      <span className="text-xs font-bold text-slate-800 font-outfit">Escolha o valor:</span>
                     </div>
                     <div className="text-xs font-black text-[#5F7FFF] font-outfit bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200/60">
-                      ${totalPrice} USD
+                      R$ {currentAmount}
                     </div>
                   </div>
 
-                  {/* Botões de Seleção Rápida (1, 3, 5, Custom) */}
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[1, 3, 5].map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => {
-                          setCoffeeCount(num);
-                          setIsCustom(false);
-                        }}
-                        className={`flex items-center justify-center py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                          !isCustom && coffeeCount === num
-                            ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                        }`}
-                      >
-                        {num}
-                      </button>
-                    ))}
-
-                    {/* Botão Outro / Custom */}
+                  {/* Seletor: R$ 5, R$ 10, Outro R$ __ */}
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsCustom(true)}
-                      className={`flex items-center justify-center py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                        isCustom
+                      onClick={() => setSelectedAmount(5)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                        selectedAmount === 5
+                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      R$ 5
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAmount(10)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                        selectedAmount === 10
+                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      R$ 10
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAmount("custom")}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                        selectedAmount === "custom"
                           ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
                           : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                       }`}
@@ -267,19 +267,20 @@ export default function FloatingSupportWidget() {
                     </button>
                   </div>
 
-                  {/* Input Customizado quando seleciona "Outro" */}
-                  {isCustom && (
-                    <div className="flex items-center gap-2 animate-fade-in">
-                      <span className="text-xs font-medium text-slate-600">Qtd de cafés:</span>
+                  {/* Input Customizado: outro R$ __ */}
+                  {selectedAmount === "custom" && (
+                    <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-indigo-200 shadow-2xs animate-fade-in">
+                      <span className="text-xs font-bold text-[#5F7FFF]">R$</span>
                       <input
                         type="number"
                         min="1"
-                        max="100"
-                        value={customAmount}
-                        onChange={(e) => setCustomAmount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                        className="w-20 px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#5F7FFF]/30"
+                        max="10000"
+                        placeholder="Digite o valor"
+                        value={customBrl}
+                        onChange={(e) => setCustomBrl(e.target.value)}
+                        className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
+                        autoFocus
                       />
-                      <span className="text-xs font-bold text-[#5F7FFF]">(${totalPrice})</span>
                     </div>
                   )}
 
@@ -315,13 +316,13 @@ export default function FloatingSupportWidget() {
                     </span>
                   </label>
 
-                  {/* Botão de Ação Principal (Do Script Oficial do BMC) */}
+                  {/* Botão de Ação Principal em Reais */}
                   <button
                     type="submit"
                     className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5F7FFF] hover:bg-[#4d6feb] text-white py-2.5 px-4 text-xs font-bold shadow-md shadow-[#5F7FFF]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
                   >
                     <Coffee className="h-4 w-4" />
-                    <span>Apoiar ${totalPrice} no Buy Me a Coffee</span>
+                    <span>Apoiar R$ {currentAmount} no Buy Me a Coffee</span>
                     <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                   </button>
                 </div>
