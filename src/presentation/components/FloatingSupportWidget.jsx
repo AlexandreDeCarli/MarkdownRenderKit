@@ -28,6 +28,28 @@ export default function FloatingSupportWidget() {
 
   const currentAmount = selectedAmount === "custom" ? (Number(customBrl) || 5) : selectedAmount;
 
+  // Limpa imediatamente qualquer elemento remanescente injetado pelo script antigo do BMC
+  useEffect(() => {
+    const purgeOldBmc = () => {
+      const oldBtn = document.getElementById("bmc-wbtn");
+      if (oldBtn) oldBtn.remove();
+      const oldIframe = document.getElementById("bmc-iframe");
+      if (oldIframe) oldIframe.remove();
+      const oldClose = document.getElementById("bmc-close-btn");
+      if (oldClose) oldClose.remove();
+      const oldScript = document.querySelector('script[data-name="BMC-Widget"]');
+      if (oldScript) oldScript.remove();
+      document.querySelectorAll('div[style*="Avenir Book"]').forEach((el) => el.remove());
+    };
+    purgeOldBmc();
+    const interval = setInterval(purgeOldBmc, 300);
+    const timeout = setTimeout(() => clearInterval(interval), 3000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
+
   // Controla o balão de mensagem "Valeeeu demais!"
   useEffect(() => {
     const timer = setTimeout(() => {
