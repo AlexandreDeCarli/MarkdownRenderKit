@@ -1,12 +1,27 @@
-import React from "react";
-import { User, Globe, ExternalLink, X } from "lucide-react";
+import React, { useState } from "react";
+import { User, Globe, ExternalLink, X, ChevronDown, Check, Copy, QrCode } from "lucide-react";
 
 /**
  * Premium Modal "Sobre o Desenvolvedor" (About the Developer) in Light Theme.
  * @param {{ isOpen: boolean, onClose: () => void }} props
  */
 export default function AboutModal({ isOpen, onClose }) {
+  const [pixOpen, setPixOpen] = useState(false);
+  const [copiedPix, setCopiedPix] = useState(false);
+
+  const PIX_KEY = "29c45fd6-e6e0-4708-9b49-3b049cde040f";
+
   if (!isOpen) return null;
+
+  const handleCopyPix = async () => {
+    try {
+      await navigator.clipboard.writeText(PIX_KEY);
+      setCopiedPix(true);
+      setTimeout(() => setCopiedPix(false), 2200);
+    } catch (err) {
+      console.error("Erro ao copiar chave PIX", err);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -17,7 +32,7 @@ export default function AboutModal({ isOpen, onClose }) {
       />
       
       {/* Container do Modal Premium */}
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white/95 p-7 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-xl transition-all duration-300 animate-modal-scale-in">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-3xl border border-slate-200 bg-white/95 p-7 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-xl transition-all duration-300 animate-modal-scale-in">
         {/* Efeito de brilho de gradiente superior suave */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
         
@@ -92,7 +107,7 @@ export default function AboutModal({ isOpen, onClose }) {
 
         {/* Links de Conexão e Apoio */}
         <div className="mt-6 space-y-2.5">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Conecte-se comigo</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Conecte-se e Apoie</span>
           
           <div className="flex flex-col gap-2">
             <a 
@@ -142,13 +157,98 @@ export default function AboutModal({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#e6c200] group-hover:scale-110 transition-transform"><path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><line x1="6" x2="14" y1="2" y2="2" /></svg>
-                <span className="font-outfit text-[13px]">Apoie no Buy Me a Coffee</span>
+                <span className="font-outfit text-[13px]">Support via Buy Me a Coffee</span>
               </div>
               <ExternalLink className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
             </a>
+
+            {/* Botão e Painel Interativo de Apoio via PIX */}
+            <div className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => setPixOpen(!pixOpen)}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 cursor-pointer group ${
+                  pixOpen
+                    ? "bg-teal-50/90 border-teal-300 text-teal-950 shadow-sm"
+                    : "border-slate-200/80 bg-slate-50/50 hover:bg-teal-50/50 hover:border-teal-200 text-slate-700 hover:text-teal-900"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <svg viewBox="0 0 512 512" fill="currentColor" className="h-4 w-4 text-[#00bdae] group-hover:scale-110 transition-transform">
+                    <path d="M112.5 124.7c19.3-19.3 50.7-19.3 70 0l47.5 47.5c7.8 7.8 20.5 7.8 28.3 0l47.5-47.5c19.3-19.3 50.7-19.3 70 0l23.5 23.5c19.3 19.3 19.3 50.7 0 70l-47.5 47.5c-7.8 7.8-7.8 20.5 0 28.3l47.5 47.5c19.3 19.3 19.3 50.7 0 70l-23.5 23.5c-19.3 19.3-50.7 19.3-70 0l-47.5-47.5c-7.8-7.8-20.5-7.8-28.3 0l-47.5 47.5c-19.3 19.3-50.7 19.3-70 0l-23.5-23.5c-19.3-19.3-19.3-50.7 0-70l47.5-47.5c7.8-7.8 7.8-20.5 0-28.3l-47.5-47.5c-19.3-19.3-19.3-50.7 0-70l23.5-23.5z"/>
+                  </svg>
+                  <span className="font-outfit text-[13px] font-semibold">Support via PIX</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-full">
+                    {pixOpen ? "Ocultar" : "QR Code / Chave"}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${pixOpen ? "rotate-180 text-teal-600" : ""}`} />
+                </div>
+              </button>
+
+              {/* Painel Expansível do PIX */}
+              {pixOpen && (
+                <div className="mt-2 p-4 rounded-2xl border border-teal-200/90 bg-gradient-to-b from-teal-50/50 to-white flex flex-col items-center gap-3 animate-fade-in shadow-xs">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-teal-950 font-outfit">
+                    <QrCode className="h-4 w-4 text-teal-600" />
+                    <span>Escaneie o QR Code no seu banco</span>
+                  </div>
+
+                  {/* Imagem do QR Code com borda e sombra suave */}
+                  <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-center">
+                    <img
+                      src="/pix-qrcode.png"
+                      alt="QR Code PIX - Alexandre De Carli"
+                      className="w-48 h-48 rounded-lg object-contain select-none"
+                      loading="eager"
+                    />
+                  </div>
+
+                  {/* Container da Chave PIX com botão Copiar */}
+                  <div className="w-full space-y-1.5 pt-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block text-left">
+                      Ou copie a chave aleatória:
+                    </span>
+                    <div className="flex items-center gap-2 p-1.5 pl-3 bg-white rounded-xl border border-slate-200/90 shadow-sm">
+                      <span className="font-mono text-[11px] text-slate-700 truncate select-all flex-1" title={PIX_KEY}>
+                        {PIX_KEY}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyPix}
+                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs active:scale-95 ${
+                          copiedPix
+                            ? "bg-emerald-600 text-white shadow-emerald-600/20"
+                            : "bg-slate-900 text-white hover:bg-slate-800"
+                        }`}
+                        title="Copiar chave PIX"
+                      >
+                        {copiedPix ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-emerald-300" />
+                            <span>Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 text-center leading-relaxed mt-0.5">
+                    Qualquer contribuição apoia diretamente o desenvolvimento contínuo e open-source do projeto. Muito obrigado! ☕✨
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
