@@ -7,6 +7,7 @@ import { User, Globe, ExternalLink, X, ChevronDown, Check, Copy, QrCode } from "
  */
 export default function AboutModal({ isOpen, onClose }) {
   const [pixOpen, setPixOpen] = useState(false);
+  const [bmcOpen, setBmcOpen] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
 
   const PIX_KEY = "29c45fd6-e6e0-4708-9b49-3b049cde040f";
@@ -149,18 +150,53 @@ export default function AboutModal({ isOpen, onClose }) {
               <ExternalLink className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
             </a>
 
-            <a 
-              href="https://www.buymeacoffee.com/AlexandreDeCarli" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-[#ffdd00]/5 hover:border-[#ffdd00]/30 text-slate-700 hover:text-[#b39b00] text-xs font-semibold transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-2.5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#e6c200] group-hover:scale-110 transition-transform"><path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><line x1="6" x2="14" y1="2" y2="2" /></svg>
-                <span className="font-outfit text-[13px]">Support via Buy Me a Coffee</span>
+            {/* Buy Me a Coffee Link & QR Code Dropdown */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <a 
+                  href="https://www.buymeacoffee.com/AlexandreDeCarli" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-[#ffdd00]/5 hover:border-[#ffdd00]/30 text-slate-700 hover:text-[#b39b00] text-xs font-semibold transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-[#e6c200] group-hover:scale-110 transition-transform"><path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><line x1="6" x2="14" y1="2" y2="2" /></svg>
+                    <span className="font-outfit text-[13px]">Support via Buy Me a Coffee</span>
+                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setBmcOpen(!bmcOpen)}
+                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    bmcOpen ? "bg-amber-50 border-amber-300 text-amber-900" : "border-slate-200/80 bg-slate-50/50 text-slate-500 hover:bg-amber-50/50"
+                  }`}
+                  title="Ver QR Code do Buy Me a Coffee"
+                >
+                  <QrCode className="h-4 w-4" />
+                </button>
               </div>
-              <ExternalLink className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
-            </a>
+
+              {bmcOpen && (
+                <div className="mt-2 p-4 rounded-2xl border border-amber-200/90 bg-gradient-to-b from-amber-50/50 to-white flex flex-col items-center gap-3 animate-fade-in shadow-xs">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950 font-outfit">
+                    <QrCode className="h-4 w-4 text-amber-500" />
+                    <span>QR Code - Buy Me a Coffee</span>
+                  </div>
+                  <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-center">
+                    <img
+                      src="/bmc-qrcode.png"
+                      alt="QR Code Buy Me a Coffee - Alexandre De Carli"
+                      className="w-48 h-48 rounded-lg object-contain select-none"
+                      loading="eager"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+                    Escaneie com a câmera do celular para abrir a página de doação. ☕✨
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Botão e Painel Interativo de Apoio via PIX */}
             <div className="flex flex-col">
