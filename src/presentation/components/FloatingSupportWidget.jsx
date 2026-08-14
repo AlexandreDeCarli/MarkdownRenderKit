@@ -1,53 +1,39 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Copy, Check, QrCode, ExternalLink, X, Heart, Coffee, Smartphone, ChevronDown, Lock } from "lucide-react";
+import { Copy, Check, QrCode, ExternalLink, X, Heart, Coffee, Smartphone, ChevronDown } from "lucide-react";
 
 /**
  * Unified Floating Support Widget (PIX + Buy Me a Coffee)
- * Reproduz os controles em Reais (R$ 5, R$ 10, Outro R$ __) com formulário nativo,
- * chave PIX copiável e QR Codes sob demanda.
+ * Integração direta com a engine oficial de checkout do Buy Me a Coffee (via iframe com viewport calibrado para zero rolagem)
+ * e suporte nativo completo ao PIX (QR Code e chave copiável).
  */
 export default function FloatingSupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("pix"); // 'pix' | 'bmc'
   const [copiedPix, setCopiedPix] = useState(false);
   const [showPixQr, setShowPixQr] = useState(false);
-  const [showBmcQr, setShowBmcQr] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
 
-  // Seletor de Valores em Reais (R$ 5, R$ 10, Outro R$ __)
-  const [selectedAmount, setSelectedAmount] = useState(5); // 5 | 10 | 'custom'
-  const [customBrl, setCustomBrl] = useState("20");
-  const [donorName, setDonorName] = useState("");
-  const [donorMessage, setDonorMessage] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
+  // Valores sugeridos para PIX
+  const [selectedPixAmount, setSelectedPixAmount] = useState(5);
+  const [customPix, setCustomPix] = useState("20");
 
   const widgetRef = useRef(null);
 
   const PIX_KEY = "29c45fd6-e6e0-4708-9b49-3b049cde040f";
-  const BMC_USER = "alexandredecarli";
+  const BMC_ID = "alexandredecarli";
+  const BMC_EMBED_URL = `https://buymeacoffee.com/widget/page/${BMC_ID}?description=Support%20me%20on%20Buy%20me%20a%20coffee!&color=%235F7FFF`;
 
-  const currentAmount = selectedAmount === "custom" ? (Number(customBrl) || 5) : selectedAmount;
-
-  // Limpa imediatamente qualquer elemento remanescente injetado pelo script antigo do BMC
+  // Limpa elementos residuais do script antigo caso existam no DOM
   useEffect(() => {
     const purgeOldBmc = () => {
       const oldBtn = document.getElementById("bmc-wbtn");
       if (oldBtn) oldBtn.remove();
-      const oldIframe = document.getElementById("bmc-iframe");
-      if (oldIframe) oldIframe.remove();
       const oldClose = document.getElementById("bmc-close-btn");
       if (oldClose) oldClose.remove();
       const oldScript = document.querySelector('script[data-name="BMC-Widget"]');
       if (oldScript) oldScript.remove();
-      document.querySelectorAll('div[style*="Avenir Book"]').forEach((el) => el.remove());
     };
     purgeOldBmc();
-    const interval = setInterval(purgeOldBmc, 300);
-    const timeout = setTimeout(() => clearInterval(interval), 3000);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
   }, []);
 
   // Controla o balão de mensagem "Valeeeu demais!"
@@ -83,12 +69,6 @@ export default function FloatingSupportWidget() {
     }
   };
 
-  const handleBmcSubmit = (e) => {
-    e.preventDefault();
-    const url = `https://buymeacoffee.com/${BMC_USER}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div ref={widgetRef} className="fixed bottom-5 right-5 z-50 font-sans select-none">
       {/* Balão Flutuante de Boas-Vindas ("Valeeeu demais!") */}
@@ -105,36 +85,41 @@ export default function FloatingSupportWidget() {
 
       {/* Popover Card */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-[340px] sm:w-[380px] max-h-[85vh] overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col transition-all duration-300">
+        <div
+          className={`absolute bottom-16 right-0 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col transition-all duration-300 ${
+            activeTab === "bmc"
+              ? "w-[360px] sm:w-[420px] h-[670px] max-h-[90vh]"
+              : "w-[340px] sm:w-[380px] max-h-[85vh]"
+          }`}
+        >
           {/* Top Gradient Bar - 100% Flush de ponta a ponta */}
           <div className="h-1.5 w-full bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400 shrink-0" />
 
-          {/* Conteúdo com scroll interno suave */}
-          <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-400 shadow-sm">
-                  <Heart className="h-4 w-4 fill-rose-500 text-rose-500 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold font-outfit text-slate-900 leading-tight">Apoie o Projeto</h3>
-                  <p className="text-[11px] font-medium text-slate-500">Escolha a forma de apoio:</p>
-                </div>
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-400 shadow-sm">
+                <Heart className="h-4 w-4 fill-rose-500 text-rose-500 animate-pulse" />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="cursor-pointer rounded-full border border-slate-200/80 bg-white p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200 shadow-2xs"
-                title="Fechar"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div>
+                <h3 className="text-sm font-bold font-outfit text-slate-900 leading-tight">Apoie o Projeto</h3>
+                <p className="text-[11px] font-medium text-slate-500">Escolha a forma de apoio:</p>
+              </div>
             </div>
 
-            {/* Segmented Control: [ PIX ] & [ Buy Me ] */}
-            <div className="mt-3.5 flex p-1 bg-slate-100/90 rounded-2xl border border-slate-200/60 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="cursor-pointer rounded-full border border-slate-200/80 bg-slate-50 p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200 shadow-2xs"
+              title="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Segmented Control: [ PIX ] & [ Buy Me ] */}
+          <div className="px-5 pt-3 pb-2.5 bg-slate-50/70 border-b border-slate-100 shrink-0">
+            <div className="flex p-1 bg-slate-200/70 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setActiveTab("pix")}
@@ -163,222 +148,155 @@ export default function FloatingSupportWidget() {
                 <span>Buy Me a Coffee</span>
               </button>
             </div>
+          </div>
 
-            {/* ABA 1: PIX */}
-            {activeTab === "pix" && (
-              <div className="mt-3.5 flex flex-col gap-3 animate-fade-in">
-                <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-200/70 flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">
-                      Chave PIX (Aleatória)
-                    </span>
-                    <span className="text-[10px] font-bold text-teal-600 bg-teal-100/80 px-2 py-0.5 rounded-full">
-                      Brasil
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 bg-white rounded-xl border border-teal-200/80 font-mono text-[11px] text-slate-800 break-all select-all shadow-2xs">
-                    {PIX_KEY}
-                  </div>
-
+          {/* ABA 1: PIX */}
+          {activeTab === "pix" && (
+            <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col gap-3 animate-fade-in bg-white">
+              {/* Seletor de Valor Sugerido em Reais */}
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex flex-col gap-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  Valor sugerido:
+                </span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[5, 10].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setSelectedPixAmount(val)}
+                      className={`py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                        selectedPixAmount === val
+                          ? "bg-teal-700 text-white border-teal-700 shadow-xs"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      R$ {val}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    onClick={handleCopyPix}
-                    className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs active:scale-[0.98] ${
-                      copiedPix
-                        ? "bg-emerald-600 text-white shadow-emerald-600/20"
-                        : "bg-teal-700 hover:bg-teal-800 text-white"
+                    onClick={() => setSelectedPixAmount("custom")}
+                    className={`py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
+                      selectedPixAmount === "custom"
+                        ? "bg-teal-700 text-white border-teal-700 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
-                    {copiedPix ? (
-                      <>
-                        <Check className="h-4 w-4 text-emerald-200" />
-                        <span>Chave PIX Copiada com Sucesso!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        <span>Copiar Chave PIX</span>
-                      </>
-                    )}
+                    Outro
                   </button>
                 </div>
 
-                {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
-                <div className="flex flex-col items-center pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowPixQr(!showPixQr)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 py-1.5 px-2.5 rounded-xl hover:bg-slate-100/80 transition-colors cursor-pointer"
-                  >
-                    <Smartphone className="h-3.5 w-3.5 text-teal-600" />
-                    <span>{showPixQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showPixQr ? "rotate-180 text-teal-600" : ""}`} />
-                  </button>
-
-                  {showPixQr && (
-                    <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in w-full">
-                      <img
-                        src="/pix-qrcode.png"
-                        alt="QR Code PIX - Alexandre De Carli"
-                        className="w-44 h-44 rounded-lg object-contain select-none"
-                      />
-                      <span className="text-[10px] text-slate-500 font-medium">Abra o app do seu banco e aponte a câmera</span>
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                  Qualquer contribuição apoia o desenvolvimento contínuo e open-source. Valeu demais! 💙
-                </p>
-              </div>
-            )}
-
-            {/* ABA 2: BUY ME A COFFEE (Controles em Reais R$ 5, R$ 10, Outro R$ __) */}
-            {activeTab === "bmc" && (
-              <form onSubmit={handleBmcSubmit} className="mt-3.5 flex flex-col gap-3 animate-fade-in">
-                {/* Seção dos Controles em Reais */}
-                <div className="p-3.5 bg-gradient-to-b from-indigo-50/70 to-white rounded-2xl border border-indigo-100/90 flex flex-col gap-3">
-                  {/* Cabeçalho do Seletor de Valor */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base">☕</span>
-                      <span className="text-xs font-bold text-slate-800 font-outfit">Escolha o valor:</span>
-                    </div>
-                    <div className="text-xs font-black text-[#5F7FFF] font-outfit bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200/60">
-                      R$ {currentAmount}
-                    </div>
-                  </div>
-
-                  {/* Seletor: R$ 5, R$ 10, Outro R$ __ */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedAmount(5)}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                        selectedAmount === 5
-                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
-                    >
-                      R$ 5
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedAmount(10)}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                        selectedAmount === 10
-                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
-                    >
-                      R$ 10
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedAmount("custom")}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                        selectedAmount === "custom"
-                          ? "bg-[#5F7FFF] text-white border-[#5F7FFF] shadow-xs scale-[1.02]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
-                    >
-                      Outro
-                    </button>
-                  </div>
-
-                  {/* Input Customizado: outro R$ __ */}
-                  {selectedAmount === "custom" && (
-                    <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-indigo-200 shadow-2xs animate-fade-in">
-                      <span className="text-xs font-bold text-[#5F7FFF]">R$</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10000"
-                        placeholder="Digite o valor"
-                        value={customBrl}
-                        onChange={(e) => setCustomBrl(e.target.value)}
-                        className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none placeholder:text-slate-300"
-                        autoFocus
-                      />
-                    </div>
-                  )}
-
-                  {/* Input: Nome ou @social (opcional) */}
-                  <input
-                    type="text"
-                    value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    placeholder="Nome ou @social (opcional)"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5F7FFF]/30 focus:border-[#5F7FFF] transition-all shadow-2xs"
-                  />
-
-                  {/* Input: Mensagem de apoio (opcional) */}
-                  <textarea
-                    rows={2}
-                    value={donorMessage}
-                    onChange={(e) => setDonorMessage(e.target.value)}
-                    placeholder="Deixe uma mensagem legal... (opcional)"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5F7FFF]/30 focus:border-[#5F7FFF] transition-all resize-none shadow-2xs"
-                  />
-
-                  {/* Checkbox: Mensagem Privada */}
-                  <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer select-none">
+                {selectedPixAmount === "custom" && (
+                  <div className="flex items-center gap-2 p-1.5 px-2.5 bg-white rounded-xl border border-teal-300 shadow-2xs animate-fade-in">
+                    <span className="text-xs font-bold text-teal-700">R$</span>
                     <input
-                      type="checkbox"
-                      checked={isPrivate}
-                      onChange={(e) => setIsPrivate(e.target.checked)}
-                      className="rounded border-slate-300 text-[#5F7FFF] focus:ring-[#5F7FFF]"
+                      type="number"
+                      min="1"
+                      placeholder="Outro valor"
+                      value={customPix}
+                      onChange={(e) => setCustomPix(e.target.value)}
+                      className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
+                      autoFocus
                     />
-                    <span className="flex items-center gap-1">
-                      <Lock className="h-3 w-3 text-slate-400" />
-                      Manter mensagem privada
-                    </span>
-                  </label>
+                  </div>
+                )}
+              </div>
 
-                  {/* Botão de Ação Principal em Reais */}
-                  <button
-                    type="submit"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#5F7FFF] hover:bg-[#4d6feb] text-white py-2.5 px-4 text-xs font-bold shadow-md shadow-[#5F7FFF]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer"
-                  >
-                    <Coffee className="h-4 w-4" />
-                    <span>Apoiar R$ {currentAmount} no Buy Me a Coffee</span>
-                    <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-                  </button>
+              {/* Chave PIX */}
+              <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-200/70 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">
+                    Chave PIX (Aleatória)
+                  </span>
+                  <span className="text-[10px] font-bold text-teal-600 bg-teal-100/80 px-2 py-0.5 rounded-full">
+                    Brasil
+                  </span>
                 </div>
 
-                {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
-                <div className="flex flex-col items-center pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowBmcQr(!showBmcQr)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-700 py-1.5 px-2.5 rounded-xl hover:bg-slate-100/80 transition-colors cursor-pointer"
-                  >
-                    <Smartphone className="h-3.5 w-3.5 text-[#5F7FFF]" />
-                    <span>{showBmcQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showBmcQr ? "rotate-180 text-[#5F7FFF]" : ""}`} />
-                  </button>
+                <div className="p-2.5 bg-white rounded-xl border border-teal-200/80 font-mono text-[11px] text-slate-800 break-all select-all shadow-2xs">
+                  {PIX_KEY}
+                </div>
 
-                  {showBmcQr && (
-                    <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in w-full">
-                      <img
-                        src="/bmc-qrcode.png"
-                        alt="QR Code Buy Me a Coffee"
-                        className="w-44 h-44 rounded-lg object-contain select-none"
-                      />
-                      <span className="text-[10px] text-slate-500 font-medium">Escaneie com a câmera do celular para pagar</span>
-                    </div>
+                <button
+                  type="button"
+                  onClick={handleCopyPix}
+                  className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs active:scale-[0.98] ${
+                    copiedPix
+                      ? "bg-emerald-600 text-white shadow-emerald-600/20"
+                      : "bg-teal-700 hover:bg-teal-800 text-white"
+                  }`}
+                >
+                  {copiedPix ? (
+                    <>
+                      <Check className="h-4 w-4 text-emerald-200" />
+                      <span>Chave PIX Copiada!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Copiar Chave PIX</span>
+                    </>
                   )}
-                </div>
+                </button>
+              </div>
 
-                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                  Aceita cartões internacionais, Apple Pay, Google Pay e PayPal. ☕✨
-                </p>
-              </form>
-            )}
-          </div>
+              {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
+              <div className="flex flex-col items-center pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPixQr(!showPixQr)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 py-1.5 px-2.5 rounded-xl hover:bg-slate-100/80 transition-colors cursor-pointer"
+                >
+                  <Smartphone className="h-3.5 w-3.5 text-teal-600" />
+                  <span>{showPixQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showPixQr ? "rotate-180 text-teal-600" : ""}`} />
+                </button>
+
+                {showPixQr && (
+                  <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in w-full">
+                    <img
+                      src="/pix-qrcode.png"
+                      alt="QR Code PIX - Alexandre De Carli"
+                      className="w-44 h-44 rounded-lg object-contain select-none"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">Abra o app do seu banco e aponte a câmera</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                Qualquer contribuição apoia o desenvolvimento contínuo e open-source. Valeu demais! 💙
+              </p>
+            </div>
+          )}
+
+          {/* ABA 2: BUY ME A COFFEE (Engine Oficial de Checkout do BMC em Viewport Exato) */}
+          {activeTab === "bmc" && (
+            <div className="flex-1 w-full relative bg-slate-50 flex flex-col overflow-hidden animate-fade-in">
+              <iframe
+                id="bmc-iframe-native"
+                src={BMC_EMBED_URL}
+                title="Buy Me a Coffee Official Checkout"
+                allow="publickey-credentials-get *; payment *"
+                className="w-full flex-1 border-0 bg-white"
+                loading="eager"
+              />
+
+              {/* Barra de Rodapé com Link Externo e QR Code Fallback */}
+              <div className="px-4 py-2.5 bg-white border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+                <span className="text-[10px]">Cartão • Apple Pay • PayPal</span>
+                <a
+                  href={`https://buymeacoffee.com/${BMC_ID}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[#5F7FFF] hover:underline flex items-center gap-1"
+                >
+                  <span>Abrir em aba</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
