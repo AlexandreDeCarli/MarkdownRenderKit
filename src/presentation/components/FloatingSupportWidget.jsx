@@ -150,70 +150,33 @@ export default function FloatingSupportWidget() {
             </div>
           </div>
 
-          {/* ABA 1: PIX */}
+          {/* ABA 1: PIX (QR Code e Chave Diretos Sempre Visíveis) */}
           {activeTab === "pix" && (
-            <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col gap-3 animate-fade-in bg-white">
-              {/* Seletor de Valor Sugerido em Reais */}
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex flex-col gap-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Valor sugerido:
+            <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col items-center gap-3 animate-fade-in bg-white">
+              {/* QR Code Card Permanente */}
+              <div className="p-3 bg-white rounded-2xl border border-teal-200/80 shadow-xs flex flex-col items-center gap-2 w-full max-w-[260px]">
+                <img
+                  src="/pix-qrcode.png"
+                  alt="QR Code PIX - Alexandre De Carli"
+                  className="w-48 h-48 rounded-xl object-contain select-none shadow-2xs border border-slate-100"
+                />
+                <span className="text-[11px] text-teal-800 font-semibold flex items-center gap-1">
+                  <span>📱</span> Aponte a câmera do seu banco
                 </span>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[5, 10].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setSelectedPixAmount(val)}
-                      className={`py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                        selectedPixAmount === val
-                          ? "bg-teal-700 text-white border-teal-700 shadow-xs"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                    >
-                      R$ {val}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPixAmount("custom")}
-                    className={`py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                      selectedPixAmount === "custom"
-                        ? "bg-teal-700 text-white border-teal-700 shadow-xs"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    Outro
-                  </button>
-                </div>
-
-                {selectedPixAmount === "custom" && (
-                  <div className="flex items-center gap-2 p-1.5 px-2.5 bg-white rounded-xl border border-teal-300 shadow-2xs animate-fade-in">
-                    <span className="text-xs font-bold text-teal-700">R$</span>
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Outro valor"
-                      value={customPix}
-                      onChange={(e) => setCustomPix(e.target.value)}
-                      className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
-                      autoFocus
-                    />
-                  </div>
-                )}
               </div>
 
-              {/* Chave PIX */}
-              <div className="p-3.5 bg-teal-50/50 rounded-2xl border border-teal-200/70 flex flex-col gap-2.5">
+              {/* Chave PIX e Botão de Copiar */}
+              <div className="w-full p-3 bg-teal-50/60 rounded-2xl border border-teal-200/70 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-teal-800 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-teal-900 uppercase tracking-wider">
                     Chave PIX (Aleatória)
                   </span>
                   <span className="text-[10px] font-bold text-teal-600 bg-teal-100/80 px-2 py-0.5 rounded-full">
-                    Brasil
+                    Copia e Cola
                   </span>
                 </div>
 
-                <div className="p-2.5 bg-white rounded-xl border border-teal-200/80 font-mono text-[11px] text-slate-800 break-all select-all shadow-2xs">
+                <div className="p-2 bg-white rounded-xl border border-teal-200/80 font-mono text-[11px] text-slate-800 break-all select-all text-center shadow-2xs">
                   {PIX_KEY}
                 </div>
 
@@ -229,7 +192,7 @@ export default function FloatingSupportWidget() {
                   {copiedPix ? (
                     <>
                       <Check className="h-4 w-4 text-emerald-200" />
-                      <span>Chave PIX Copiada!</span>
+                      <span>Chave PIX Copiada com Sucesso!</span>
                     </>
                   ) : (
                     <>
@@ -238,30 +201,6 @@ export default function FloatingSupportWidget() {
                     </>
                   )}
                 </button>
-              </div>
-
-              {/* Botão Sutil para Pagar pelo Celular (QR Code) */}
-              <div className="flex flex-col items-center pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setShowPixQr(!showPixQr)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 py-1.5 px-2.5 rounded-xl hover:bg-slate-100/80 transition-colors cursor-pointer"
-                >
-                  <Smartphone className="h-3.5 w-3.5 text-teal-600" />
-                  <span>{showPixQr ? "Ocultar QR Code" : "Pagar pelo celular (QR Code)"}</span>
-                  <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showPixQr ? "rotate-180 text-teal-600" : ""}`} />
-                </button>
-
-                {showPixQr && (
-                  <div className="mt-2.5 p-3 bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center gap-2 animate-fade-in w-full">
-                    <img
-                      src="/pix-qrcode.png"
-                      alt="QR Code PIX - Alexandre De Carli"
-                      className="w-44 h-44 rounded-lg object-contain select-none"
-                    />
-                    <span className="text-[10px] text-slate-500 font-medium">Abra o app do seu banco e aponte a câmera</span>
-                  </div>
-                )}
               </div>
 
               <p className="text-[11px] text-slate-400 text-center leading-relaxed">
