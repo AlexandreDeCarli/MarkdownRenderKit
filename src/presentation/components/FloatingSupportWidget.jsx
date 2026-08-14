@@ -10,12 +10,6 @@ export default function FloatingSupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("pix"); // 'pix' | 'bmc'
   const [copiedPix, setCopiedPix] = useState(false);
-  const [showPixQr, setShowPixQr] = useState(false);
-  const [showBubble, setShowBubble] = useState(true);
-
-  // Valores sugeridos para PIX
-  const [selectedPixAmount, setSelectedPixAmount] = useState(5);
-  const [customPix, setCustomPix] = useState("20");
 
   const widgetRef = useRef(null);
 
@@ -23,25 +17,27 @@ export default function FloatingSupportWidget() {
   const BMC_ID = "alexandredecarli";
   const BMC_EMBED_URL = `https://buymeacoffee.com/widget/page/${BMC_ID}?description=Support%20me%20on%20Buy%20me%20a%20coffee!&color=%235F7FFF`;
 
-  // Limpa elementos residuais do script antigo caso existam no DOM
+  // Limpa continuamente qualquer elemento residual do script antigo do BMC
   useEffect(() => {
     const purgeOldBmc = () => {
       const oldBtn = document.getElementById("bmc-wbtn");
       if (oldBtn) oldBtn.remove();
       const oldClose = document.getElementById("bmc-close-btn");
       if (oldClose) oldClose.remove();
+      const oldIframe = document.getElementById("bmc-iframe");
+      if (oldIframe) oldIframe.remove();
       const oldScript = document.querySelector('script[data-name="BMC-Widget"]');
       if (oldScript) oldScript.remove();
+      // Remove qualquer botão circular ou balão inserido pelo script externo
+      document.querySelectorAll('#bmc-wbtn, [id^="bmc-"], div[style*="Avenir Book"]').forEach((el) => {
+        if (el.id !== "bmc-iframe-native" && el.id !== "btn-floating-support") {
+          el.remove();
+        }
+      });
     };
     purgeOldBmc();
-  }, []);
-
-  // Controla o balão de mensagem "Valeeeu demais!"
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowBubble(false);
-    }, 7000);
-    return () => clearTimeout(timer);
+    const interval = setInterval(purgeOldBmc, 500);
+    return () => clearInterval(interval);
   }, []);
 
   // Fecha o popover ao clicar fora
@@ -71,18 +67,6 @@ export default function FloatingSupportWidget() {
 
   return (
     <div ref={widgetRef} className="fixed bottom-5 right-5 z-50 font-sans select-none">
-      {/* Balão Flutuante de Boas-Vindas ("Valeeeu demais!") */}
-      {showBubble && !isOpen && (
-        <div
-          onClick={() => setIsOpen(true)}
-          className="absolute bottom-1 right-20 mb-1 mr-1 flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-slate-800 shadow-[0_10px_35px_-5px_rgba(15,23,42,0.18)] border border-slate-200/80 cursor-pointer animate-fade-in whitespace-nowrap hover:bg-slate-50 transition-all active:scale-95"
-        >
-          <span className="text-sm">✨</span>
-          <span>Valeeeu demais!</span>
-          <div className="absolute -right-2 bottom-4 h-3 w-3 rotate-45 border-r border-t border-slate-200/80 bg-white" />
-        </div>
-      )}
-
       {/* Popover Card */}
       {isOpen && (
         <div
@@ -252,7 +236,6 @@ export default function FloatingSupportWidget() {
         type="button"
         id="btn-floating-support"
         onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setShowBubble(true)}
         className="inline-flex items-center gap-2.5 rounded-full bg-[#5F7FFF] hover:bg-[#4e70f5] text-white px-4 py-3 text-xs font-bold shadow-[0_10px_35px_-5px_rgba(95,127,255,0.45)] hover:shadow-[0_15px_40px_-5px_rgba(95,127,255,0.55)] border border-white/20 backdrop-blur-md active:scale-95 transition-all duration-200 cursor-pointer group"
         title="Apoiar o projeto via PIX ou Buy Me a Coffee"
       >
