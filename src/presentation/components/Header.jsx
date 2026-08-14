@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Highlighter, Copy, Check, ExternalLink, FileDown, Settings, User, Link2, Unlink2 } from "lucide-react";
+import { Plus, Highlighter, Copy, Check, ExternalLink, FileDown, Settings, User } from "lucide-react";
 
 /**
  * Premium Frosted-Glass Header for MarkdownRenderKit in Light Theme.
@@ -11,8 +11,6 @@ import { Plus, Highlighter, Copy, Check, ExternalLink, FileDown, Settings, User,
  *   onExportPdf: () => void,
  *   onToggleSettings: () => void,
  *   onToggleAbout: () => void,
- *   onToggleSync: () => void,
- *   syncEnabled: boolean,
  *   settingsOpen: boolean,
  *   copied: boolean
  * }} props
@@ -25,8 +23,6 @@ export default function Header({
   onExportPdf,
   onToggleSettings,
   onToggleAbout,
-  onToggleSync,
-  syncEnabled = true,
   settingsOpen,
   copied,
 }) {
@@ -105,34 +101,6 @@ export default function Header({
 
         <div className="mx-1 h-5 w-px bg-slate-200" />
 
-        {/* Sincronização de Rolagem Toggle */}
-        <button
-          id="btn-toggle-sync"
-          onClick={onToggleSync}
-          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer shadow-sm border ${
-            syncEnabled
-              ? "bg-indigo-50/90 text-indigo-700 border-indigo-200/80 hover:bg-indigo-100/80"
-              : "bg-slate-100/80 text-slate-400 border-slate-200 hover:bg-slate-200/70"
-          }`}
-          title={
-            syncEnabled
-              ? "Sincronização de rolagem ativada (clique para pausar)"
-              : "Sincronização de rolagem desativada (clique para ativar)"
-          }
-        >
-          {syncEnabled ? (
-            <>
-              <Link2 className="h-3.5 w-3.5 text-indigo-600" />
-              <span>Sync</span>
-            </>
-          ) : (
-            <>
-              <Unlink2 className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-slate-400">Sync Off</span>
-            </>
-          )}
-        </button>
-
         {/* Sobre o Desenvolvedor Button */}
         <button
           id="btn-about"
@@ -162,4 +130,5 @@ export default function Header({
     </header>
   );
 }
+
 

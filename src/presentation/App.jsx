@@ -57,8 +57,6 @@ export default function App() {
         onExportPdf={() => openFormattedWindow({ autoPrint: true })}
         onToggleSettings={() => setSettingsOpen(!settingsOpen)}
         onToggleAbout={() => setAboutOpen(true)}
-        onToggleSync={toggleSync}
-        syncEnabled={syncEnabled}
         settingsOpen={settingsOpen}
         copied={copied}
       />
