@@ -5,6 +5,7 @@ import SettingsPanel from "./components/SettingsPanel.jsx";
 import EditorPane from "./components/EditorPane.jsx";
 import PreviewPane from "./components/PreviewPane.jsx";
 import AboutModal from "./components/AboutModal.jsx";
+import FloatingSupportWidget from "./components/FloatingSupportWidget.jsx";
 
 /**
  * Componente raiz do MarkdownRenderKit.
@@ -27,8 +28,6 @@ export default function App() {
     mermaidVersion,
     renderedHtml,
     previewCss,
-    syncEnabled,
-    toggleSync,
     updateSetting,
     applyPreset,
     insertAtCursor,
@@ -94,7 +93,11 @@ export default function App() {
         isOpen={aboutOpen}
         onClose={() => setAboutOpen(false)}
       />
+
+      {/* Widget Flutuante de Apoio (PIX + Buy Me a Coffee) */}
+      <FloatingSupportWidget />
     </div>
   );
 }
+
 
