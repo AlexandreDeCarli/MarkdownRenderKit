@@ -270,28 +270,36 @@ export default function FloatingSupportWidget() {
             </div>
           )}
 
-          {/* ABA 2: BUY ME A COFFEE (Engine Oficial de Checkout do BMC em Viewport Exato) */}
+          {/* ABA 2: BUY ME A COFFEE (Engine Oficial de Checkout com escala tipográfica calibrada) */}
           {activeTab === "bmc" && (
-            <div className="flex-1 w-full relative bg-slate-50 flex flex-col overflow-hidden animate-fade-in">
-              <iframe
-                id="bmc-iframe-native"
-                src={BMC_EMBED_URL}
-                title="Buy Me a Coffee Official Checkout"
-                allow="publickey-credentials-get *; payment *"
-                className="w-full flex-1 border-0 bg-white"
-                loading="eager"
-              />
+            <div className="flex-1 w-full relative bg-white flex flex-col overflow-hidden animate-fade-in">
+              <div className="relative w-full flex-1 overflow-hidden">
+                <iframe
+                  id="bmc-iframe-native"
+                  src={BMC_EMBED_URL}
+                  title="Buy Me a Coffee Official Checkout"
+                  allow="publickey-credentials-get *; payment *"
+                  className="absolute top-0 left-0 border-0 bg-white select-none"
+                  style={{
+                    width: "116.3%",
+                    height: "116.3%",
+                    transform: "scale(0.86)",
+                    transformOrigin: "top left",
+                  }}
+                  loading="eager"
+                />
+              </div>
 
-              {/* Barra de Rodapé com Link Externo e QR Code Fallback */}
-              <div className="px-4 py-2.5 bg-white border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
-                <span className="text-[10px]">Cartão • Apple Pay • PayPal</span>
+              {/* Barra de Rodapé com Link Externo */}
+              <div className="px-4 py-2 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+                <span className="text-[10px] font-medium text-slate-500">Cartão • Apple Pay • PayPal</span>
                 <a
                   href={`https://buymeacoffee.com/${BMC_ID}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold text-[#5F7FFF] hover:underline flex items-center gap-1"
                 >
-                  <span>Abrir em aba</span>
+                  <span>Abrir no site</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
