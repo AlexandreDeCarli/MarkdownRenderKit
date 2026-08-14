@@ -1,30 +1,88 @@
-import { marked } from "marked";
+import { Marked } from "marked";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 
-// ── Configuração do marked ──────────────────────────────────────────────────
+// ── Instância e Configuração do Marked com Mapeamento de Linhas ─────────────
 
-try {
-  marked.setOptions({ gfm: true, breaks: true });
+const customMarked = new Marked({ gfm: true, breaks: true });
 
-  const renderer = new marked.Renderer();
-  renderer.code = function ({ text, lang }) {
-    if (lang === "mermaid") {
-      const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return `<div class="mermaid-block" data-mermaid="${encodeURIComponent(text)}">${escaped}</div>`;
-    }
-    const language = lang && hljs.getLanguage(lang) ? lang : null;
-    const highlighted = language
-      ? hljs.highlight(text, { language }).value
-      : hljs.highlightAuto(text).value;
-    const langLabel = language || "";
-    return `<pre><div class="code-lang-label">${langLabel}</div><code class="hljs${language ? ` language-${language}` : ""}">${highlighted}</code></pre>`;
-  };
-
-  marked.setOptions({ renderer });
-} catch (error) {
-  console.warn("Não foi possível configurar o marked. O app seguirá com as opções padrão.", error);
+function formatLineAttr(token) {
+  if (!token || typeof token.startLine !== "number") return "";
+  return ` data-source-line="${token.startLine}" data-line-end="${token.endLine || token.startLine}"`;
 }
+
+customMarked.use({
+  renderer: {
+    heading(token) {
+      const lineAttr = formatLineAttr(token);
+      return `<h${token.depth}${lineAttr}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`;
+    },
+    paragraph(token) {
+      const lineAttr = formatLineAttr(token);
+      return `<p${lineAttr}>${this.parser.parseInline(token.tokens)}</p>\n`;
+    },
+    blockquote(token) {
+      const lineAttr = formatLineAttr(token);
+      return `<blockquote${lineAttr}>\n${this.parser.parse(token.tokens)}</blockquote>\n`;
+    },
+    list(token) {
+      let body = "";
+      for (let i = 0; i < token.items.length; i++) {
+        body += this.listitem(token.items[i]);
+      }
+      const type = token.ordered ? "ol" : "ul";
+      const start = token.ordered && token.start !== 1 ? ` start="${token.start}"` : "";
+      const lineAttr = formatLineAttr(token);
+      return `<${type}${start}${lineAttr}>\n${body}</${type}>\n`;
+    },
+    table(token) {
+      let headerCells = "";
+      for (let r = 0; r < token.header.length; r++) {
+        headerCells += this.tablecell(token.header[r]);
+      }
+      const headerRow = this.tablerow({ text: headerCells });
+
+      let bodyRows = "";
+      for (let r = 0; r < token.rows.length; r++) {
+        let rowCells = "";
+        for (let c = 0; c < token.rows[r].length; c++) {
+          rowCells += this.tablecell(token.rows[r][c]);
+        }
+        bodyRows += this.tablerow({ text: rowCells });
+      }
+      if (bodyRows) {
+        bodyRows = `<tbody>${bodyRows}</tbody>`;
+      }
+      const lineAttr = formatLineAttr(token);
+      return `<table${lineAttr}>\n<thead>\n${headerRow}</thead>\n${bodyRows}</table>\n`;
+    },
+    code(token) {
+      const lineAttr = formatLineAttr(token);
+      const text = token.text;
+      const lang = token.lang;
+      if (lang === "mermaid") {
+        const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return `<div class="mermaid-block"${lineAttr} data-mermaid="${encodeURIComponent(text)}">${escaped}</div>\n`;
+      }
+      const language = lang && hljs.getLanguage(lang) ? lang : null;
+      const highlighted = language
+        ? hljs.highlight(text, { language }).value
+        : hljs.highlightAuto(text).value;
+      const langLabel = language || "";
+      return `<pre${lineAttr}><div class="code-lang-label">${langLabel}</div><code class="hljs${language ? ` language-${language}` : ""}">${highlighted}</code></pre>\n`;
+    },
+    hr(token) {
+      const lineAttr = formatLineAttr(token);
+      return `<hr${lineAttr}>\n`;
+    },
+    html(token) {
+      if (token.block && token.startLine) {
+        return `<div data-source-line="${token.startLine}" data-line-end="${token.endLine || token.startLine}">${token.text}</div>\n`;
+      }
+      return token.text;
+    }
+  }
+});
 
 // ── Funções de processamento ─────────────────────────────────────────────────
 
@@ -79,22 +137,52 @@ export function preprocessMarkdown(markdown) {
   const processed = protectedText
     .replace(/==([^=\n][\s\S]*?[^=\n])==/g, "<mark>$1</mark>")
     .replace(
-      /\n?\s*(<!--\s*pagebreak\s*-->|---page---|:::pagebreak)\s*\n?/gi,
-      '\n\n<div class="page-break"></div>\n\n'
+      /(<!--\s*pagebreak\s*-->|---page---|:::pagebreak)/gi,
+      '<div class="page-break"></div>'
     );
 
   return restoreCodeBlocks(processed, blocks);
 }
 
 /**
- * Converte markdown em HTML seguro (DOMPurify sanitizado).
+ * Converte markdown em HTML seguro (DOMPurify sanitizado) com marcadores de linha.
  * @param {string} markdown
  * @returns {string}
  */
 export function renderMarkdown(markdown) {
-  const raw = marked.parse(preprocessMarkdown(markdown));
-  return DOMPurify.sanitize(raw, {
+  const preprocessed = preprocessMarkdown(markdown);
+  const tokens = customMarked.lexer(preprocessed);
+
+  // Calcula startLine e endLine para cada token com base nas quebras de linha
+  let currentLine = 1;
+  for (const token of tokens) {
+    token.startLine = currentLine;
+    const lineCount = (token.raw.match(/\n/g) || []).length;
+    token.endLine = currentLine + lineCount;
+    currentLine += lineCount;
+  }
+
+  const raw = customMarked.parser(tokens);
+  const sanitizeOptions = {
     ADD_TAGS: ["iframe", "mark"],
-    ADD_ATTR: ["target", "allow", "allowfullscreen", "frameborder", "scrolling", "class", "data-mermaid"],
-  });
+    ADD_ATTR: [
+      "target",
+      "allow",
+      "allowfullscreen",
+      "frameborder",
+      "scrolling",
+      "class",
+      "data-mermaid",
+      "data-source-line",
+      "data-line-end"
+    ],
+  };
+
+  if (DOMPurify && typeof DOMPurify.sanitize === "function") {
+    return DOMPurify.sanitize(raw, sanitizeOptions);
+  }
+
+  return raw;
 }
+
+

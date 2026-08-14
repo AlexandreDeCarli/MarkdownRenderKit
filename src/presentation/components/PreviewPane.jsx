@@ -3,9 +3,19 @@ import { Eye } from "lucide-react";
 
 /**
  * Premium Right Panel: Live HTML formatted preview.
- * @param {{ renderedHtml: string, mermaidVersion: number, previewRef: React.RefObject }} props
+ * @param {{
+ *   renderedHtml: string,
+ *   mermaidVersion: number,
+ *   previewRef: React.RefObject,
+ *   previewContainerRef: React.RefObject
+ * }} props
  */
-export default function PreviewPane({ renderedHtml, mermaidVersion, previewRef }) {
+export default function PreviewPane({
+  renderedHtml,
+  mermaidVersion,
+  previewRef,
+  previewContainerRef,
+}) {
   return (
     <section className="flex w-1/2 flex-col bg-white">
       {/* Pane Header */}
@@ -20,7 +30,10 @@ export default function PreviewPane({ renderedHtml, mermaidVersion, previewRef }
       </div>
       
       {/* Document Preview Box */}
-      <div className="flex-1 overflow-auto bg-slate-100/50 p-6 custom-scrollbar">
+      <div
+        ref={previewContainerRef}
+        className="flex-1 overflow-auto bg-slate-100/50 p-6 custom-scrollbar"
+      >
         <article
           key={mermaidVersion}
           ref={previewRef}
@@ -31,3 +44,4 @@ export default function PreviewPane({ renderedHtml, mermaidVersion, previewRef }
     </section>
   );
 }
+

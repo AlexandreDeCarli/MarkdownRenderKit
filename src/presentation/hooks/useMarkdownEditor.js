@@ -8,6 +8,7 @@ import { buildMermaidThemeVars } from "../../application/mermaidService.js";
 import { createFullHtml } from "../../application/htmlExporter.js";
 import { loadSettings, saveSettings } from "../../infrastructure/settingsRepository.js";
 import { copyToClipboard } from "../../infrastructure/clipboardService.js";
+import { useScrollSync } from "./useScrollSync.js";
 
 /**
  * Hook principal que encapsula toda a lógica do editor de markdown.
@@ -16,6 +17,7 @@ import { copyToClipboard } from "../../infrastructure/clipboardService.js";
 export function useMarkdownEditor() {
   const editorRef = useRef(null);
   const previewRef = useRef(null);
+  const previewContainerRef = useRef(null);
   const mermaidVersionRef = useRef(0);
 
   const [markdown, setMarkdown] = useState(starterMarkdown);
@@ -25,6 +27,13 @@ export function useMarkdownEditor() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mermaidVersion, setMermaidVersion] = useState(0);
   const [settings, setSettings] = useState(() => loadSettings());
+
+  // Hook de sincronização de rolagem com compensação para Mermaid
+  const { syncEnabled, setSyncEnabled, toggleSync, rebuildMap } = useScrollSync({
+    editorRef,
+    previewContainerRef,
+    mermaidVersion,
+  });
 
   // Debounce markdown rendering (500ms)
   useEffect(() => {
@@ -63,7 +72,10 @@ export function useMarkdownEditor() {
         block.innerHTML = `<pre style="color:#ef4444;text-align:left;font-size:0.85em">Erro ao renderizar diagrama Mermaid:\n${error.message || error}</pre>`;
       }
     }
-  }, [settings]);
+
+    // Após renderizar todos os blocos Mermaid, atualiza o mapa geométrico de rolagem
+    rebuildMap();
+  }, [settings, rebuildMap]);
 
   // Bump version para forçar re-render do mermaid
   useEffect(() => {
@@ -153,6 +165,7 @@ export function useMarkdownEditor() {
     // refs
     editorRef,
     previewRef,
+    previewContainerRef,
     // state
     markdown,
     setMarkdown,
@@ -165,7 +178,11 @@ export function useMarkdownEditor() {
     mermaidVersion,
     renderedHtml,
     previewCss,
+    syncEnabled,
+    setSyncEnabled,
     // handlers
+    toggleSync,
+    rebuildMap,
     updateSetting,
     applyPreset,
     insertAtCursor,
@@ -174,3 +191,4 @@ export function useMarkdownEditor() {
     defaultSettings,
   };
 }
+

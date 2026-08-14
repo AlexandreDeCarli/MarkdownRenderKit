@@ -1,11 +1,28 @@
-import { preprocessMarkdown } from "./markdownProcessor.js";
+import { preprocessMarkdown, renderMarkdown } from "./markdownProcessor.js";
 import { createFullHtml } from "./htmlExporter.js";
 import { defaultSettings } from "../domain/entities/settings.js";
+import { calculatePreviewScrollTop, calculateEditorScrollTop } from "./scrollSyncService.js";
 
 /**
  * Executa os autotestes do sistema e loga resultados no console.
  */
 export function runSelfTests() {
+  const dummyEditor = { scrollHeight: 1000, clientHeight: 200 };
+  const dummyPreview = { scrollHeight: 2000, clientHeight: 400 };
+  const mockMap = [
+    { startLine: 1, endLine: 1, editorTop: 0, editorBottom: 28, previewTop: 0, previewBottom: 50, previewHeight: 50 },
+    // Bloco Mermaid: 4 linhas no editor (112px) gerando 500px no preview
+    { startLine: 10, endLine: 14, editorTop: 252, editorBottom: 392, previewTop: 300, previewBottom: 800, previewHeight: 500 },
+    { startLine: 20, endLine: 22, editorTop: 532, editorBottom: 616, previewTop: 900, previewBottom: 980, previewHeight: 80 },
+  ];
+
+  const htmlWithMermaid = renderMarkdown("# Título\n\n```mermaid\nflowchart TD\nA-->B\n```\n\nTexto final");
+
+  // Testa interpolação no meio do bloco Mermaid
+  const midMermaidEditorScroll = 252 + (392 - 252) / 2; // meio do bloco mermaid no editor (322px)
+  const calculatedPreviewScroll = calculatePreviewScrollTop(midMermaidEditorScroll, dummyEditor, dummyPreview, mockMap);
+  const midMermaidPreviewScroll = 300 + 500 / 2; // meio do bloco mermaid no preview (550px)
+
   const tests = [
     {
       name: "converte destaque ==texto== em mark",
@@ -27,13 +44,29 @@ export function runSelfTests() {
       name: "HTML completo tem documento válido",
       pass: createFullHtml({ bodyHtml: "<h1>Teste</h1>", settings: defaultSettings }).startsWith("<!doctype html>"),
     },
+    {
+      name: "renderMarkdown insere data-source-line nos cabeçalhos e parágrafos",
+      pass: htmlWithMermaid.includes('data-source-line="1"') && htmlWithMermaid.includes('data-source-line="8"'),
+    },
+    {
+      name: "renderMarkdown preserva data-source-line no bloco mermaid",
+      pass: htmlWithMermaid.includes('class="mermaid-block"') && htmlWithMermaid.includes('data-source-line="3"'),
+    },
+    {
+      name: "sincronização de rolagem interpola com precisão dentro do bloco Mermaid",
+      pass: Math.abs(calculatedPreviewScroll - midMermaidPreviewScroll) < 5,
+    },
+    {
+      name: "sincronização de rolagem inversa (preview -> editor) funciona dentro do Mermaid",
+      pass: Math.abs(calculateEditorScrollTop(midMermaidPreviewScroll, dummyEditor, dummyPreview, mockMap) - midMermaidEditorScroll) < 5,
+    },
   ];
 
   const failed = tests.filter((test) => !test.pass);
   if (failed.length > 0) {
     console.warn("Autotestes falharam:", failed.map((t) => t.name));
   } else {
-    console.info("Autotestes passaram:", tests.map((t) => t.name));
+    console.info("Autotestes passaram com sucesso! (" + tests.length + " verificações)");
   }
 }
 
@@ -42,3 +75,4 @@ if (typeof window !== "undefined" && !window.__MARKDOWN_RENDER_KIT_SELF_TESTS__)
   window.__MARKDOWN_RENDER_KIT_SELF_TESTS__ = true;
   runSelfTests();
 }
+

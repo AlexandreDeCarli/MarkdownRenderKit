@@ -15,6 +15,7 @@ export default function App() {
   const {
     editorRef,
     previewRef,
+    previewContainerRef,
     markdown,
     setMarkdown,
     settings,
@@ -26,6 +27,8 @@ export default function App() {
     mermaidVersion,
     renderedHtml,
     previewCss,
+    syncEnabled,
+    toggleSync,
     updateSetting,
     applyPreset,
     insertAtCursor,
@@ -54,6 +57,8 @@ export default function App() {
         onExportPdf={() => openFormattedWindow({ autoPrint: true })}
         onToggleSettings={() => setSettingsOpen(!settingsOpen)}
         onToggleAbout={() => setAboutOpen(true)}
+        onToggleSync={toggleSync}
+        syncEnabled={syncEnabled}
         settingsOpen={settingsOpen}
         copied={copied}
       />
@@ -82,6 +87,7 @@ export default function App() {
           renderedHtml={renderedHtml}
           mermaidVersion={mermaidVersion}
           previewRef={previewRef}
+          previewContainerRef={previewContainerRef}
         />
       </main>
 
@@ -93,3 +99,4 @@ export default function App() {
     </div>
   );
 }
+
