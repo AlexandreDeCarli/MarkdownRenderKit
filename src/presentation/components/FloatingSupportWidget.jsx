@@ -71,31 +71,33 @@ export default function FloatingSupportWidget() {
 
       {/* Popover Card */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-[330px] sm:w-[360px] rounded-3xl border border-slate-200/90 bg-white/95 p-5 shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col transition-all duration-300">
-          {/* Top Gradient Bar */}
-          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400 rounded-t-3xl" />
+        <div className="absolute bottom-16 right-0 w-[330px] sm:w-[360px] overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_25px_65px_-12px_rgba(15,23,42,0.28)] backdrop-blur-xl animate-modal-scale-in flex flex-col transition-all duration-300">
+          {/* Top Gradient Bar - Perfeitamente colada de ponta a ponta */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#00bdae] via-[#5F7FFF] to-amber-400 shrink-0" />
 
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-400 shadow-sm">
-                <Heart className="h-4 w-4 fill-rose-500 text-rose-500 animate-pulse" />
+          {/* Conteúdo Interno */}
+          <div className="p-5 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-amber-400 shadow-sm">
+                  <Heart className="h-4 w-4 fill-rose-500 text-rose-500 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold font-outfit text-slate-900 leading-tight">Apoie o Projeto</h3>
+                  <p className="text-[11px] font-medium text-slate-500">Escolha como prefere apoiar:</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold font-outfit text-slate-900 leading-tight">Apoie o Projeto</h3>
-                <p className="text-[11px] font-medium text-slate-500">Escolha como prefere apoiar:</p>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="cursor-pointer rounded-full border border-slate-200/80 bg-white p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200 shadow-2xs"
+                title="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="cursor-pointer rounded-full border border-slate-200/80 bg-white p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200 shadow-2xs"
-              title="Fechar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
 
           {/* Segmented Tabs: [ PIX ] & [ Buy Me ] */}
           <div className="mt-3.5 flex p-1 bg-slate-100/90 rounded-2xl border border-slate-200/60 shrink-0">
@@ -263,6 +265,7 @@ export default function FloatingSupportWidget() {
               </p>
             </div>
           )}
+          </div>
         </div>
       )}
 

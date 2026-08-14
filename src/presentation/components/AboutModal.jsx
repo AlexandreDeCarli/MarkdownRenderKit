@@ -33,18 +33,20 @@ export default function AboutModal({ isOpen, onClose }) {
       />
       
       {/* Container do Modal Premium */}
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-3xl border border-slate-200 bg-white/95 p-7 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-xl transition-all duration-300 animate-modal-scale-in">
-        {/* Efeito de brilho de gradiente superior suave */}
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-        
-        {/* Botão de Fechar Premium */}
-        <button
-          onClick={onClose}
-          className="absolute right-5 top-5 cursor-pointer rounded-full border border-slate-100 bg-slate-50 p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200"
-          title="Fechar"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_25px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-xl transition-all duration-300 animate-modal-scale-in flex flex-col">
+        {/* Efeito de brilho de gradiente superior suave - Perfeitamente colado no topo */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shrink-0" />
+
+        {/* Conteúdo com rolagem e padding interno */}
+        <div className="p-7 overflow-y-auto custom-scrollbar flex flex-col relative">
+          {/* Botão de Fechar Premium */}
+          <button
+            onClick={onClose}
+            className="absolute right-5 top-5 cursor-pointer rounded-full border border-slate-100 bg-slate-50 p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-all duration-200"
+            title="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
         {/* Informações do Perfil */}
         <div className="flex flex-col items-center text-center space-y-4 pb-2">
@@ -285,6 +287,7 @@ export default function AboutModal({ isOpen, onClose }) {
         </div>
       </div>
     </div>
+  </div>
   );
 }
 
