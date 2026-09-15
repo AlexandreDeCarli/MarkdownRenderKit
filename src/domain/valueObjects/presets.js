@@ -98,4 +98,24 @@ export const presets = [
     flowLineColor: "#5A645A",
     flowTextColor: "#146E37",
   },
+  {
+    // Sanofi — brand palette (2022 identity):
+    // Purple #7A00E6 | Black #000000 | White #FFFFFF
+    name: "Sanofi",
+    titleColor: "#1a1a1a",
+    h2Color: "#7A00E6",
+    highlightColor: "#ede0fc",
+    highlightTextColor: "#4a0091",
+    linkColor: "#7A00E6",
+    pageBg: "#f5f0fa",
+    paperBg: "#ffffff",
+    flowPrimaryBg: "#ede0fc",
+    flowPrimaryBorder: "#7A00E6",
+    flowSecondaryBg: "#d9c2f7",
+    flowSecondaryBorder: "#5c00b0",
+    flowTertiaryBg: "#f3ecff",
+    flowTertiaryBorder: "#9b40f5",
+    flowLineColor: "#6b21a8",
+    flowTextColor: "#1a1a1a",
+  },
 ];
