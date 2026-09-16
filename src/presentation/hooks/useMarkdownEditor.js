@@ -8,6 +8,7 @@ import { buildMermaidThemeVars } from "../../application/mermaidService.js";
 import { createFullHtml } from "../../application/htmlExporter.js";
 import { loadSettings, saveSettings } from "../../infrastructure/settingsRepository.js";
 import { copyToClipboard } from "../../infrastructure/clipboardService.js";
+import { validateMarkdownTables, formatAndFixTables } from "../../application/tableValidator.js";
 import { useScrollSync } from "./useScrollSync.js";
 
 /**
@@ -27,6 +28,8 @@ export function useMarkdownEditor() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mermaidVersion, setMermaidVersion] = useState(0);
   const [settings, setSettings] = useState(() => loadSettings());
+  const [tableValidationModalOpen, setTableValidationModalOpen] = useState(false);
+  const [tableValidationResult, setTableValidationResult] = useState(null);
 
   // Hook de sincronização de rolagem com compensação para Mermaid
   const { syncEnabled, setSyncEnabled, toggleSync, rebuildMap } = useScrollSync({
@@ -161,6 +164,40 @@ export function useMarkdownEditor() {
     }
   }
 
+  function handleValidateTables() {
+    const result = validateMarkdownTables(markdown);
+    setTableValidationResult(result);
+    if (result.totalTables === 0) {
+      showNotice("Nenhuma tabela encontrada no documento Markdown.");
+    } else if (result.isValid) {
+      showNotice(`✅ Todas as tabelas estão consistentes! (${result.totalTables} tabela(s) sem erros)`);
+    } else {
+      setTableValidationModalOpen(true);
+    }
+  }
+
+  function handleAutoFixTables() {
+    const { fixedMarkdown, fixCount } = formatAndFixTables(markdown);
+    setMarkdown(fixedMarkdown);
+    const recheck = validateMarkdownTables(fixedMarkdown);
+    setTableValidationResult(recheck);
+    showNotice(`✨ ${fixCount} tabela(s) corrigida(s) e alinhada(s) com sucesso!`);
+  }
+
+  function handleJumpToLine(lineNumber) {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+    const lines = markdown.split("\n");
+    let charIdx = 0;
+    for (let i = 0; i < lineNumber - 1 && i < lines.length; i++) {
+      charIdx += lines[i].length + 1;
+    }
+    const lineEndIdx = charIdx + (lines[lineNumber - 1] ? lines[lineNumber - 1].length : 0);
+    textarea.focus();
+    textarea.setSelectionRange(charIdx, lineEndIdx);
+    textarea.scrollTop = Math.max(0, (lineNumber - 4) * 28);
+  }
+
   return {
     // refs
     editorRef,
@@ -175,6 +212,9 @@ export function useMarkdownEditor() {
     notice,
     settingsOpen,
     setSettingsOpen,
+    tableValidationModalOpen,
+    setTableValidationModalOpen,
+    tableValidationResult,
     mermaidVersion,
     renderedHtml,
     previewCss,
@@ -188,6 +228,9 @@ export function useMarkdownEditor() {
     insertAtCursor,
     copyHtml,
     openFormattedWindow,
+    handleValidateTables,
+    handleAutoFixTables,
+    handleJumpToLine,
     defaultSettings,
   };
 }

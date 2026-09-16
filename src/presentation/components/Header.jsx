@@ -1,11 +1,9 @@
 import React from "react";
-import { Plus, Highlighter, Copy, Check, ExternalLink, FileDown, Settings, User } from "lucide-react";
+import { Copy, Check, ExternalLink, FileDown, Settings, User } from "lucide-react";
 
 /**
  * Premium Frosted-Glass Header for MarkdownRenderKit in Light Theme.
  * @param {{
- *   onInsertPageBreak: () => void,
- *   onInsertHighlight: () => void,
  *   onCopyHtml: () => void,
  *   onOpenPopup: () => void,
  *   onExportPdf: () => void,
@@ -16,8 +14,6 @@ import { Plus, Highlighter, Copy, Check, ExternalLink, FileDown, Settings, User 
  * }} props
  */
 export default function Header({
-  onInsertPageBreak,
-  onInsertHighlight,
   onCopyHtml,
   onOpenPopup,
   onExportPdf,
@@ -40,25 +36,6 @@ export default function Header({
 
       {/* Action Toolbar */}
       <div className="flex items-center gap-2">
-        <button
-          id="btn-pagebreak"
-          onClick={onInsertPageBreak}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
-          title="Inserir quebra de página para PDF"
-        >
-          <Plus className="h-3.5 w-3.5 text-indigo-500" /> 
-          <span>Quebra</span>
-        </button>
-        
-        <button
-          id="btn-highlight"
-          onClick={onInsertHighlight}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
-          title="Destacar texto selecionado"
-        >
-          <Highlighter className="h-3.5 w-3.5 text-amber-500" />
-          <span>Destaque</span>
-        </button>
 
         <button
           id="btn-copy-html"

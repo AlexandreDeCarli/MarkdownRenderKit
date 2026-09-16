@@ -1,11 +1,25 @@
 import React from "react";
-import { Trash2, FileEdit } from "lucide-react";
+import { Trash2, FileEdit, Plus, Highlighter, Table } from "lucide-react";
 
 /**
  * Premium Left Panel: Markdown source editor text area.
- * @param {{ markdown: string, onChange: (v: string) => void, editorRef: React.RefObject }} props
+ * @param {{
+ *   markdown: string,
+ *   onChange: (v: string) => void,
+ *   editorRef: React.RefObject,
+ *   onInsertPageBreak: () => void,
+ *   onInsertHighlight: () => void,
+ *   onValidateTables: () => void
+ * }} props
  */
-export default function EditorPane({ markdown, onChange, editorRef }) {
+export default function EditorPane({
+  markdown,
+  onChange,
+  editorRef,
+  onInsertPageBreak,
+  onInsertHighlight,
+  onValidateTables,
+}) {
   return (
     <section className="flex w-1/2 flex-col bg-white">
       {/* Pane Header */}
@@ -14,15 +28,50 @@ export default function EditorPane({ markdown, onChange, editorRef }) {
           <FileEdit className="h-4 w-4 text-indigo-500" />
           <h2 className="text-sm font-bold font-outfit text-slate-800 tracking-tight">Fonte Markdown</h2>
         </div>
-        <button
-          id="btn-clear-editor"
-          onClick={() => onChange("")}
-          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
-          title="Limpar editor"
-        >
-          <Trash2 className="h-3 w-3" />
-          <span>Limpar</span>
-        </button>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            id="btn-pagebreak"
+            onClick={onInsertPageBreak}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+            title="Inserir quebra de página para PDF"
+          >
+            <Plus className="h-3.5 w-3.5 text-indigo-500" />
+            <span>Quebra</span>
+          </button>
+
+          <button
+            id="btn-highlight"
+            onClick={onInsertHighlight}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+            title="Destacar texto selecionado"
+          >
+            <Highlighter className="h-3.5 w-3.5 text-amber-500" />
+            <span>Destaque</span>
+          </button>
+
+          <button
+            id="btn-validate-tables"
+            onClick={onValidateTables}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+            title="Validar se as tabelas estão consistentes (células vs cabeçalho)"
+          >
+            <Table className="h-3.5 w-3.5 text-indigo-600" />
+            <span>Tabelas</span>
+          </button>
+
+          <div className="mx-1 h-4 w-px bg-slate-200" />
+
+          <button
+            id="btn-clear-editor"
+            onClick={() => onChange("")}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+            title="Limpar editor"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>Limpar</span>
+          </button>
+        </div>
       </div>
       
       {/* Markdown Text Area */}

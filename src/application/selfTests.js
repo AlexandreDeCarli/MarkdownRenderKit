@@ -2,6 +2,7 @@ import { preprocessMarkdown, renderMarkdown } from "./markdownProcessor.js";
 import { createFullHtml } from "./htmlExporter.js";
 import { defaultSettings } from "../domain/entities/settings.js";
 import { calculatePreviewScrollTop, calculateEditorScrollTop } from "./scrollSyncService.js";
+import { validateMarkdownTables, formatAndFixTables } from "./tableValidator.js";
 
 /**
  * Executa os autotestes do sistema e loga resultados no console.
@@ -59,6 +60,32 @@ export function runSelfTests() {
     {
       name: "sincronização de rolagem inversa (preview -> editor) funciona dentro do Mermaid",
       pass: Math.abs(calculateEditorScrollTop(midMermaidPreviewScroll, dummyEditor, dummyPreview, mockMap) - midMermaidEditorScroll) < 5,
+    },
+    {
+      name: "detecta tabela consistente com sucesso",
+      pass: validateMarkdownTables("| A | B |\n| --- | --- |\n| 1 | 2 |").isValid === true,
+    },
+    {
+      name: "detecta inconsistência de células na linha da tabela",
+      pass: (() => {
+        const res = validateMarkdownTables("| A | B | C |\n| --- | --- | --- |\n| 1 | 2 |");
+        return res.isValid === false && res.totalIssues === 1 && res.issues[0].actual === 2;
+      })(),
+    },
+    {
+      name: "detecta tentativa de tabela sem divisor",
+      pass: (() => {
+        const res = validateMarkdownTables("| A | B |\n| 1 | 2 |");
+        return res.isValid === false && res.issues.some((i) => i.type === "MISSING_DELIMITER");
+      })(),
+    },
+    {
+      name: "corrige e alinha automaticamente tabela inconsistente",
+      pass: (() => {
+        const broken = "| A | B | C |\n| --- | --- | --- |\n| 1 | 2 |";
+        const { fixedMarkdown } = formatAndFixTables(broken);
+        return validateMarkdownTables(fixedMarkdown).isValid === true;
+      })(),
     },
   ];
 

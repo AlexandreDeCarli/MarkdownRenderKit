@@ -5,6 +5,7 @@ import SettingsPanel from "./components/SettingsPanel.jsx";
 import EditorPane from "./components/EditorPane.jsx";
 import PreviewPane from "./components/PreviewPane.jsx";
 import AboutModal from "./components/AboutModal.jsx";
+import TableValidationModal from "./components/TableValidationModal.jsx";
 import FloatingSupportWidget from "./components/FloatingSupportWidget.jsx";
 
 /**
@@ -25,6 +26,9 @@ export default function App() {
     notice,
     settingsOpen,
     setSettingsOpen,
+    tableValidationModalOpen,
+    setTableValidationModalOpen,
+    tableValidationResult,
     mermaidVersion,
     renderedHtml,
     previewCss,
@@ -33,6 +37,9 @@ export default function App() {
     insertAtCursor,
     copyHtml,
     openFormattedWindow,
+    handleValidateTables,
+    handleAutoFixTables,
+    handleJumpToLine,
     defaultSettings,
   } = useMarkdownEditor();
 
@@ -49,8 +56,6 @@ export default function App() {
       ) : null}
 
       <Header
-        onInsertPageBreak={() => insertAtCursor("<!-- pagebreak -->")}
-        onInsertHighlight={() => insertAtCursor("==texto destacado==")}
         onCopyHtml={copyHtml}
         onOpenPopup={() => openFormattedWindow()}
         onExportPdf={() => openFormattedWindow({ autoPrint: true })}
@@ -75,6 +80,9 @@ export default function App() {
           markdown={markdown}
           onChange={setMarkdown}
           editorRef={editorRef}
+          onInsertPageBreak={() => insertAtCursor("<!-- pagebreak -->")}
+          onInsertHighlight={() => insertAtCursor("==texto destacado==")}
+          onValidateTables={handleValidateTables}
         />
         
         {/* Soft elegant separator line */}
@@ -92,6 +100,15 @@ export default function App() {
       <AboutModal
         isOpen={aboutOpen}
         onClose={() => setAboutOpen(false)}
+      />
+
+      {/* Modal de Validação de Consistência de Tabelas */}
+      <TableValidationModal
+        isOpen={tableValidationModalOpen}
+        onClose={() => setTableValidationModalOpen(false)}
+        validationResult={tableValidationResult}
+        onAutoFix={handleAutoFixTables}
+        onJumpToLine={handleJumpToLine}
       />
 
       {/* Widget Flutuante de Apoio (PIX + Buy Me a Coffee) */}
