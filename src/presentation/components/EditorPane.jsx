@@ -57,7 +57,7 @@ export default function EditorPane({
             title="Validar se as tabelas estão consistentes (células vs cabeçalho)"
           >
             <Table className="h-3.5 w-3.5 text-indigo-600" />
-            <span>Tabelas</span>
+            <span>Verificar Tabelas</span>
           </button>
 
           <div className="mx-1 h-4 w-px bg-slate-200" />

@@ -107,7 +107,6 @@ export default function App() {
         isOpen={tableValidationModalOpen}
         onClose={() => setTableValidationModalOpen(false)}
         validationResult={tableValidationResult}
-        onAutoFix={handleAutoFixTables}
         onJumpToLine={handleJumpToLine}
       />
 

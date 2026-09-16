@@ -4,17 +4,16 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
-  Wand2,
   ArrowRight,
   HelpCircle,
   ExternalLink,
 } from "lucide-react";
 
 /**
- * Modal de Diagnóstico e Auto-Correção de Tabelas Markdown.
+ * Modal de Diagnóstico de Tabelas Markdown.
  * 
  * Exibe um relatório detalhado das divergências de células em relação ao cabeçalho
- * e permite auto-correção com preenchimento de células e alinhamento visual de colunas.
+ * e permite navegar diretamente para o trecho com erro direcionando o foco no editor.
  * 
  * @param {{
  *   isOpen: boolean,
@@ -28,7 +27,6 @@ import {
  *     tables: Array,
  *     issues: Array
  *   } | null,
- *   onAutoFix: () => void,
  *   onJumpToLine?: (line: number) => void
  * }} props
  */
@@ -36,7 +34,6 @@ export default function TableValidationModal({
   isOpen,
   onClose,
   validationResult,
-  onAutoFix,
   onJumpToLine,
 }) {
   if (!isOpen || !validationResult) return null;
@@ -258,10 +255,10 @@ export default function TableValidationModal({
                               onJumpToLine(issue.line);
                               onClose();
                             }}
-                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-                            title="Ir até a linha no editor"
+                            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all duration-150 cursor-pointer active:scale-95 shadow-xs"
+                            title={`Ir para o trecho na linha ${issue.line} e direcionar o foco`}
                           >
-                            <span>Ir</span>
+                            <span>Ir para trecho</span>
                             <ArrowRight className="h-3 w-3" />
                           </button>
                         )}
@@ -283,32 +280,19 @@ export default function TableValidationModal({
             Fechar
           </button>
 
-          {!isValid && (
+          {!isValid && onJumpToLine && (
             <button
-              id="btn-autofix-tables"
+              id="btn-jump-to-issue"
               onClick={() => {
-                onAutoFix();
+                const targetLine = issues[0]?.line || tablesWithIssues[0]?.startLine || 1;
+                onJumpToLine(targetLine);
                 onClose();
               }}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-5 py-2 text-xs font-bold text-white hover:opacity-95 active:scale-95 transition-all duration-200 cursor-pointer shadow-md shadow-indigo-600/20"
-              title="Preencher células faltantes e alinhar perfeitamente todas as colunas"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-5 py-2 text-xs font-bold text-white hover:opacity-95 active:scale-95 transition-all duration-200 cursor-pointer shadow-md shadow-indigo-600/20"
+              title="Ir para o trecho com erro no editor e direcionar o foco"
             >
-              <Wand2 className="h-3.5 w-3.5 text-indigo-200" />
-              <span>Corrigir e Alinhar Automaticamente</span>
-            </button>
-          )}
-
-          {isValid && totalTables > 0 && (
-            <button
-              onClick={() => {
-                onAutoFix();
-                onClose();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 active:scale-95 transition-all duration-200 cursor-pointer"
-              title="Alinhar larguras de colunas para formatação perfeita"
-            >
-              <Wand2 className="h-3.5 w-3.5 text-indigo-500" />
-              <span>Alinhar Colunas Visualmente</span>
+              <span>Ir para trecho</span>
+              <ArrowRight className="h-3.5 w-3.5 text-indigo-200" />
             </button>
           )}
         </div>

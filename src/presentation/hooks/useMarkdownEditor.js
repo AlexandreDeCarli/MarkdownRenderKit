@@ -193,9 +193,12 @@ export function useMarkdownEditor() {
       charIdx += lines[i].length + 1;
     }
     const lineEndIdx = charIdx + (lines[lineNumber - 1] ? lines[lineNumber - 1].length : 0);
-    textarea.focus();
-    textarea.setSelectionRange(charIdx, lineEndIdx);
-    textarea.scrollTop = Math.max(0, (lineNumber - 4) * 28);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(charIdx, lineEndIdx);
+      const targetScroll = Math.max(0, (lineNumber - 4) * 28);
+      textarea.scrollTo({ top: targetScroll, behavior: "smooth" });
+    }, 60);
   }
 
   return {
