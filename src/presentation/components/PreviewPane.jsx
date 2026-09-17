@@ -37,7 +37,7 @@ export default function PreviewPane({
         <article
           key={mermaidVersion}
           ref={previewRef}
-          className="formatted-document mx-auto max-w-[800px] shadow-sm rounded-2xl bg-white border border-slate-200/40 p-10 transition-all duration-300"
+          className="formatted-document mx-auto max-w-[800px] shadow-sm rounded-2xl bg-white border border-slate-200/40 p-10 transition-colors duration-200"
           dangerouslySetInnerHTML={{ __html: renderedHtml }}
         />
       </div>

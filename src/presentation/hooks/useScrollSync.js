@@ -7,7 +7,8 @@ import {
 
 /**
  * Hook que orquestra a sincronização bidirecional de rolagem entre o editor de texto
- * e o painel de visualização formatada, com suporte a diagramas Mermaid e ResizeObserver.
+ * e o painel de visualização formatada, ancorando sempre pela linha superior visível
+ * com suporte a diagramas Mermaid, imagens, ResizeObserver e MutationObserver.
  *
  * @param {{
  *   editorRef: React.RefObject<HTMLTextAreaElement>,
@@ -23,7 +24,7 @@ import {
  */
 export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion = 0 }) {
   const [syncEnabled, setSyncEnabled] = useState(true);
-  const activeDriverRef = useRef(null); // 'editor' | 'preview' | null
+  const activeDriverRef = useRef(null); // "editor" | "preview" | null
   const resetDriverTimeoutRef = useRef(null);
   const mapRef = useRef([]);
   const isScrollingProgrammaticallyRef = useRef(false);
@@ -38,32 +39,67 @@ export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion =
   useEffect(() => {
     const timer = setTimeout(() => {
       rebuildMap();
-    }, 120);
+    }, 100);
     return () => clearTimeout(timer);
   }, [mermaidVersion, rebuildMap]);
 
-  // Observa mudanças de dimensão no container e documento para manter o mapa atualizado
+  // Recalcula quando fontes web estiverem carregadas
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        rebuildMap();
+      }).catch(() => {});
+    }
+  }, [rebuildMap]);
+
+  // Observa mudanças de dimensão no container, documento e editor
   useEffect(() => {
     const previewContainer = previewContainerRef.current;
+    const editorEl = editorRef.current;
     if (!previewContainer || typeof ResizeObserver === "undefined") return;
 
     let resizeTimer = null;
-    const observer = new ResizeObserver(() => {
+    const handleResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         rebuildMap();
-      }, 80);
+      }, 60);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(previewContainer);
+
+    const article = previewContainer.querySelector("article");
+    if (article) resizeObserver.observe(article);
+    if (editorEl) resizeObserver.observe(editorEl);
+
+    // MutationObserver para detectar inserção de nós e renderização de diagramas/tabelas
+    let mutationTimer = null;
+    const mutationObserver = new MutationObserver(() => {
+      clearTimeout(mutationTimer);
+      mutationTimer = setTimeout(() => {
+        rebuildMap();
+      }, 60);
     });
 
-    observer.observe(previewContainer);
-    const article = previewContainer.querySelector("article");
-    if (article) observer.observe(article);
+    if (article) {
+      mutationObserver.observe(article, { childList: true, subtree: true, attributes: false });
+    }
+
+    // Ouvinte para carregamento de imagens no preview
+    const handleImageLoad = () => {
+      rebuildMap();
+    };
+    previewContainer.addEventListener("load", handleImageLoad, { capture: true, passive: true });
 
     return () => {
       clearTimeout(resizeTimer);
-      observer.disconnect();
+      clearTimeout(mutationTimer);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      previewContainer.removeEventListener("load", handleImageLoad, { capture: true });
     };
-  }, [previewContainerRef, rebuildMap, mermaidVersion]);
+  }, [previewContainerRef, editorRef, rebuildMap, mermaidVersion]);
 
   // Configura os listeners de rolagem e prevenção de loops
   useEffect(() => {
@@ -94,7 +130,7 @@ export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion =
     previewEl.addEventListener("pointerdown", handlePreviewPointer, { passive: true });
     previewEl.addEventListener("touchstart", handlePreviewPointer, { passive: true });
 
-    // Listener de rolagem do Editor
+    // Listener de rolagem do Editor -> Preview
     const handleEditorScroll = () => {
       if (!syncEnabled) return;
       if (activeDriverRef.current === "preview") return;
@@ -118,7 +154,7 @@ export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion =
           mapRef.current
         );
 
-        if (Math.abs(previewEl.scrollTop - targetTop) > 1) {
+        if (Math.abs(previewEl.scrollTop - targetTop) >= 1) {
           isScrollingProgrammaticallyRef.current = true;
           previewEl.scrollTop = targetTop;
           setTimeout(() => {
@@ -128,7 +164,7 @@ export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion =
       });
     };
 
-    // Listener de rolagem do Preview
+    // Listener de rolagem do Preview -> Editor
     const handlePreviewScroll = () => {
       if (!syncEnabled) return;
       if (activeDriverRef.current === "editor") return;
@@ -152,7 +188,7 @@ export function useScrollSync({ editorRef, previewContainerRef, mermaidVersion =
           mapRef.current
         );
 
-        if (Math.abs(editorEl.scrollTop - targetTop) > 1) {
+        if (Math.abs(editorEl.scrollTop - targetTop) >= 1) {
           isScrollingProgrammaticallyRef.current = true;
           editorEl.scrollTop = targetTop;
           setTimeout(() => {
