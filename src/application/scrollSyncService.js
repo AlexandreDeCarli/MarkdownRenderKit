@@ -1,8 +1,8 @@
 /**
  * Serviço de mapeamento e cálculo geométrico de sincronização de rolagem.
- * Realiza interpolação linear por trechos (Piecewise Linear Interpolation)
- * para sincronizar o editor e a visualização formatada com precisão absoluta,
- * compensando diferenças de altura em blocos Mermaid, imagens, tabelas e títulos.
+ * Realiza ancoragem pela linha superior visível (Top-Line Anchor)
+ * com interpolação linear contínua por trechos (Piecewise Linear Interpolation)
+ * para manter o editor e o preview perfeitamente nivelados na mesma linha visual.
  */
 
 /**
@@ -12,13 +12,35 @@
  */
 export function getEditorLineHeight(editorEl) {
   if (!editorEl || typeof window === "undefined") return 28;
-  const style = window.getComputedStyle(editorEl);
-  const lh = parseFloat(style.lineHeight);
-  return Number.isFinite(lh) && lh > 0 ? lh : 28;
+  try {
+    const style = window.getComputedStyle(editorEl);
+    const lh = parseFloat(style.lineHeight);
+    return Number.isFinite(lh) && lh > 0 ? lh : 28;
+  } catch (e) {
+    return 28;
+  }
+}
+
+/**
+ * Obtém o padding-top calculado de um elemento.
+ * @param {HTMLElement} el
+ * @returns {number}
+ */
+export function getPaddingTop(el) {
+  if (!el || typeof window === "undefined") return 0;
+  try {
+    const style = window.getComputedStyle(el);
+    const pt = parseFloat(style.paddingTop);
+    return Number.isFinite(pt) && pt >= 0 ? pt : 0;
+  } catch (e) {
+    return 0;
+  }
 }
 
 /**
  * Constrói o mapa de mapeamento geométrico entre as linhas do Markdown e os elementos do Preview.
+ * Alinha o topo de cada elemento com a linha superior visível de conteúdo.
+ *
  * @param {HTMLElement} previewContainer - O container de rolagem do preview
  * @param {HTMLElement} editorEl - O textarea do editor
  * @returns {Array<{ startLine: number, endLine: number, editorTop: number, editorBottom: number, previewTop: number, previewBottom: number, previewHeight: number }>}
@@ -32,8 +54,9 @@ export function buildElementMap(previewContainer, editorEl) {
   const lineHeight = getEditorLineHeight(editorEl);
   const containerRect = previewContainer.getBoundingClientRect();
   const currentScrollTop = previewContainer.scrollTop;
+  const previewPaddingTop = getPaddingTop(previewContainer);
 
-  const map = [];
+  const rawMap = [];
 
   elements.forEach((el) => {
     const startLine = parseInt(el.getAttribute("data-source-line"), 10);
@@ -43,15 +66,17 @@ export function buildElementMap(previewContainer, editorEl) {
     const endLine = rawEnd ? parseInt(rawEnd, 10) : startLine;
 
     const elRect = el.getBoundingClientRect();
-    // Posição vertical relativa ao conteúdo rolável do container
-    const previewTop = elRect.top - containerRect.top + currentScrollTop;
+    // Distância do topo do elemento até o topo rolável do container
+    const rawTop = elRect.top - containerRect.top + currentScrollTop;
+    // Posição de rolagem necessária para posicionar o elemento no topo da área visível de conteúdo
+    const previewTop = Math.max(0, rawTop - previewPaddingTop);
     const previewHeight = el.offsetHeight || elRect.height || 20;
     const previewBottom = previewTop + previewHeight;
 
     const editorTop = (startLine - 1) * lineHeight;
     const editorBottom = Math.max(editorTop + lineHeight, endLine * lineHeight);
 
-    map.push({
+    rawMap.push({
       startLine,
       endLine,
       editorTop,
@@ -62,13 +87,99 @@ export function buildElementMap(previewContainer, editorEl) {
     });
   });
 
-  // Ordena por posição vertical
-  map.sort((a, b) => a.editorTop - b.editorTop);
+  if (rawMap.length === 0) return [];
+
+  // Ordena por posição vertical no editor
+  rawMap.sort((a, b) => a.editorTop - b.editorTop || a.previewTop - b.previewTop);
+
+  // Se o primeiro bloco for na linha 1 ou editorTop <= 0, garante que previewTop comece em 0
+  // para que o topo inicial de ambos os painéis coincida sem nenhum salto
+  if (rawMap[0].editorTop === 0 || rawMap[0].startLine === 1) {
+    const initialHeight = rawMap[0].previewHeight || 40;
+    rawMap[0].previewTop = 0;
+    rawMap[0].previewBottom = initialHeight;
+  }
+
+  // Remove redundâncias e garante monotonicidade estrita
+  const map = [];
+  for (const block of rawMap) {
+    if (map.length === 0) {
+      map.push(block);
+      continue;
+    }
+    const prev = map[map.length - 1];
+    if (block.editorTop === prev.editorTop) {
+      // Mesma linha: mantém o mais representativo (maior altura)
+      if (block.previewHeight > prev.previewHeight) {
+        map[map.length - 1] = block;
+      }
+      continue;
+    }
+    if (block.previewTop < prev.previewTop) {
+      block.previewTop = prev.previewTop;
+      block.previewBottom = Math.max(block.previewBottom, prev.previewBottom);
+    }
+    map.push(block);
+  }
+
   return map;
 }
 
 /**
- * Calcula a posição de rolagem ideal do Preview a partir do ScrollTop do Editor.
+ * Constrói a lista unificada e estritamente monótona de pontos de interpolação
+ * abrangendo de (0, 0) até (editorMaxScroll, previewMaxScroll).
+ *
+ * @param {Array} map
+ * @param {number} editorMaxScroll
+ * @param {number} previewMaxScroll
+ * @returns {Array<{ editor: number, preview: number }>}
+ */
+export function buildInterpolationPoints(map, editorMaxScroll, previewMaxScroll) {
+  const points = [];
+  points.push({ editor: 0, preview: 0 });
+
+  if (map && map.length > 0) {
+    for (const b of map) {
+      if (typeof b.editorTop === "number" && typeof b.previewTop === "number") {
+        points.push({ editor: Math.max(0, b.editorTop), preview: Math.max(0, b.previewTop) });
+      }
+      if (typeof b.editorBottom === "number" && typeof b.previewBottom === "number") {
+        if (b.editorBottom > b.editorTop && b.previewBottom > b.previewTop) {
+          points.push({ editor: Math.max(0, b.editorBottom), preview: Math.max(0, b.previewBottom) });
+        }
+      }
+    }
+  }
+
+  points.push({ editor: editorMaxScroll, preview: previewMaxScroll });
+  points.sort((a, b) => a.editor - b.editor || a.preview - b.preview);
+
+  const clean = [];
+  for (const p of points) {
+    if (clean.length === 0) {
+      clean.push(p);
+      continue;
+    }
+    const prev = clean[clean.length - 1];
+    if (p.editor <= prev.editor) {
+      if (p.preview > prev.preview) {
+        prev.preview = p.preview;
+      }
+      continue;
+    }
+    if (p.preview < prev.preview) {
+      p.preview = prev.preview;
+    }
+    clean.push(p);
+  }
+
+  return clean;
+}
+
+/**
+ * Calcula a posição de rolagem ideal do Preview a partir do ScrollTop do Editor,
+ * alinhando sempre a linha mais superior visível do markdown com seu correspondente no preview.
+ *
  * @param {number} editorScrollTop
  * @param {HTMLElement} editorEl
  * @param {HTMLElement} previewContainer
@@ -82,58 +193,32 @@ export function calculatePreviewScrollTop(editorScrollTop, editorEl, previewCont
   const previewMaxScroll = Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
 
   if (editorMaxScroll <= 0 || previewMaxScroll <= 0) return 0;
-  if (editorScrollTop <= 2) return 0;
-  if (editorScrollTop >= editorMaxScroll - 2) return previewMaxScroll;
+  if (editorScrollTop <= 0) return 0;
+  if (editorScrollTop >= editorMaxScroll) return previewMaxScroll;
 
-  if (!map || map.length === 0) {
+  const points = buildInterpolationPoints(map, editorMaxScroll, previewMaxScroll);
+  if (points.length < 2) {
     return (editorScrollTop / editorMaxScroll) * previewMaxScroll;
   }
 
-  // Antes do primeiro bloco mapeado
-  if (editorScrollTop < map[0].editorTop) {
-    if (map[0].editorTop <= 0) return map[0].previewTop;
-    const ratio = editorScrollTop / map[0].editorTop;
-    return ratio * map[0].previewTop;
-  }
-
-  // Depois do último bloco mapeado
-  const lastBlock = map[map.length - 1];
-  if (editorScrollTop >= lastBlock.editorBottom) {
-    const remainingEditor = editorMaxScroll - lastBlock.editorBottom;
-    if (remainingEditor <= 0) return previewMaxScroll;
-    const ratio = (editorScrollTop - lastBlock.editorBottom) / remainingEditor;
-    return lastBlock.previewBottom + ratio * Math.max(0, previewMaxScroll - lastBlock.previewBottom);
-  }
-
-  // Percorre os blocos para encontrar onde o scroll do editor se localiza
-  for (let i = 0; i < map.length; i++) {
-    const current = map[i];
-
-    // Caso 1: O scroll está dentro do próprio bloco (ex.: diagrama Mermaid ou bloco de código)
-    if (editorScrollTop >= current.editorTop && editorScrollTop <= current.editorBottom) {
-      const editorRange = current.editorBottom - current.editorTop;
-      const ratio = editorRange > 0 ? (editorScrollTop - current.editorTop) / editorRange : 0;
-      return current.previewTop + ratio * current.previewHeight;
-    }
-
-    // Caso 2: O scroll está no espaço entre o bloco atual e o próximo
-    if (i < map.length - 1) {
-      const next = map[i + 1];
-      if (editorScrollTop > current.editorBottom && editorScrollTop < next.editorTop) {
-        const gapEditor = next.editorTop - current.editorBottom;
-        const gapPreview = next.previewTop - current.previewBottom;
-        const ratio = gapEditor > 0 ? (editorScrollTop - current.editorBottom) / gapEditor : 0;
-        return current.previewBottom + ratio * gapPreview;
-      }
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    if (editorScrollTop >= p1.editor && editorScrollTop <= p2.editor) {
+      const range = p2.editor - p1.editor;
+      if (range <= 0) return p1.preview;
+      const ratio = (editorScrollTop - p1.editor) / range;
+      return p1.preview + ratio * (p2.preview - p1.preview);
     }
   }
 
-  // Fallback por proporção
-  return (editorScrollTop / editorMaxScroll) * previewMaxScroll;
+  return previewMaxScroll;
 }
 
 /**
- * Calcula a posição de rolagem ideal do Editor a partir do ScrollTop do Preview.
+ * Calcula a posição de rolagem ideal do Editor a partir do ScrollTop do Preview,
+ * alinhando sempre o elemento mais superior visível do preview com a linha correspondente no markdown.
+ *
  * @param {number} previewScrollTop
  * @param {HTMLElement} editorEl
  * @param {HTMLElement} previewContainer
@@ -147,53 +232,41 @@ export function calculateEditorScrollTop(previewScrollTop, editorEl, previewCont
   const previewMaxScroll = Math.max(0, previewContainer.scrollHeight - previewContainer.clientHeight);
 
   if (editorMaxScroll <= 0 || previewMaxScroll <= 0) return 0;
-  if (previewScrollTop <= 2) return 0;
-  if (previewScrollTop >= previewMaxScroll - 2) return editorMaxScroll;
+  if (previewScrollTop <= 0) return 0;
+  if (previewScrollTop >= previewMaxScroll) return editorMaxScroll;
 
-  if (!map || map.length === 0) {
+  const points = buildInterpolationPoints(map, editorMaxScroll, previewMaxScroll);
+  if (points.length < 2) {
     return (previewScrollTop / previewMaxScroll) * editorMaxScroll;
   }
 
-  // Antes do primeiro bloco mapeado
-  if (previewScrollTop < map[0].previewTop) {
-    if (map[0].previewTop <= 0) return map[0].editorTop;
-    const ratio = previewScrollTop / map[0].previewTop;
-    return ratio * map[0].editorTop;
-  }
-
-  // Depois do último bloco mapeado
-  const lastBlock = map[map.length - 1];
-  if (previewScrollTop >= lastBlock.previewBottom) {
-    const remainingPreview = previewMaxScroll - lastBlock.previewBottom;
-    if (remainingPreview <= 0) return editorMaxScroll;
-    const ratio = (previewScrollTop - lastBlock.previewBottom) / remainingPreview;
-    return lastBlock.editorBottom + ratio * Math.max(0, editorMaxScroll - lastBlock.editorBottom);
-  }
-
-  // Percorre os blocos para encontrar onde o scroll do preview se localiza
-  for (let i = 0; i < map.length; i++) {
-    const current = map[i];
-
-    // Caso 1: O scroll está dentro do próprio bloco (ex.: diagrama Mermaid renderizado)
-    if (previewScrollTop >= current.previewTop && previewScrollTop <= current.previewBottom) {
-      const previewRange = current.previewBottom - current.previewTop;
-      const ratio = previewRange > 0 ? (previewScrollTop - current.previewTop) / previewRange : 0;
-      const editorRange = current.editorBottom - current.editorTop;
-      return current.editorTop + ratio * editorRange;
+  // Ordena os pontos por preview para a busca inversa
+  const previewPoints = [...points].sort((a, b) => a.preview - b.preview || a.editor - b.editor);
+  const cleanPreview = [];
+  for (const p of previewPoints) {
+    if (cleanPreview.length === 0) {
+      cleanPreview.push(p);
+      continue;
     }
+    const prev = cleanPreview[cleanPreview.length - 1];
+    if (p.preview <= prev.preview) {
+      if (p.editor > prev.editor) prev.editor = p.editor;
+      continue;
+    }
+    if (p.editor < prev.editor) p.editor = prev.editor;
+    cleanPreview.push(p);
+  }
 
-    // Caso 2: O scroll está no espaço entre o bloco atual e o próximo
-    if (i < map.length - 1) {
-      const next = map[i + 1];
-      if (previewScrollTop > current.previewBottom && previewScrollTop < next.previewTop) {
-        const gapPreview = next.previewTop - current.previewBottom;
-        const gapEditor = next.editorTop - current.editorBottom;
-        const ratio = gapPreview > 0 ? (previewScrollTop - current.previewBottom) / gapPreview : 0;
-        return current.editorBottom + ratio * gapEditor;
-      }
+  for (let i = 0; i < cleanPreview.length - 1; i++) {
+    const p1 = cleanPreview[i];
+    const p2 = cleanPreview[i + 1];
+    if (previewScrollTop >= p1.preview && previewScrollTop <= p2.preview) {
+      const range = p2.preview - p1.preview;
+      if (range <= 0) return p1.editor;
+      const ratio = (previewScrollTop - p1.preview) / range;
+      return p1.editor + ratio * (p2.editor - p1.editor);
     }
   }
 
-  // Fallback por proporção
-  return (previewScrollTop / previewMaxScroll) * editorMaxScroll;
+  return editorMaxScroll;
 }

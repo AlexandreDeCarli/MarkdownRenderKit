@@ -62,6 +62,18 @@ export function runSelfTests() {
       pass: Math.abs(calculateEditorScrollTop(midMermaidPreviewScroll, dummyEditor, dummyPreview, mockMap) - midMermaidEditorScroll) < 5,
     },
     {
+      name: "sincronização de rolagem parte exatamente de zero sem salto inicial",
+      pass: calculatePreviewScrollTop(0, dummyEditor, dummyPreview, mockMap) === 0 && calculateEditorScrollTop(0, dummyEditor, dummyPreview, mockMap) === 0,
+    },
+    {
+      name: "sincronização de rolagem atinge o final exato no limite máximo",
+      pass: calculatePreviewScrollTop(800, dummyEditor, dummyPreview, mockMap) === 1600 && calculateEditorScrollTop(1600, dummyEditor, dummyPreview, mockMap) === 800,
+    },
+    {
+      name: "renderMarkdown atribui data-source-line individualmente aos itens de lista",
+      pass: renderMarkdown("- Item 1\n- Item 2").includes('data-source-line="1"') && renderMarkdown("- Item 1\n- Item 2").includes('data-source-line="2"'),
+    },
+    {
       name: "detecta tabela consistente com sucesso",
       pass: validateMarkdownTables("| A | B |\n| --- | --- |\n| 1 | 2 |").isValid === true,
     },

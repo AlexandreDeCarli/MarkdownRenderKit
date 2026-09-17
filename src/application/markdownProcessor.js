@@ -35,6 +35,10 @@ customMarked.use({
       const lineAttr = formatLineAttr(token);
       return `<${type}${start}${lineAttr}>\n${body}</${type}>\n`;
     },
+    listitem(token) {
+      const lineAttr = formatLineAttr(token);
+      return `<li${lineAttr}>${this.parser.parse(token.tokens, !!token.loose)}</li>\n`;
+    },
     table(token) {
       let headerCells = "";
       for (let r = 0; r < token.header.length; r++) {
@@ -76,7 +80,7 @@ customMarked.use({
       return `<hr${lineAttr}>\n`;
     },
     html(token) {
-      if (token.block && token.startLine) {
+      if (token.startLine && (token.block || (typeof token.text === "string" && token.text.includes("page-break")))) {
         return `<div data-source-line="${token.startLine}" data-line-end="${token.endLine || token.startLine}">${token.text}</div>\n`;
       }
       return token.text;
@@ -159,6 +163,17 @@ export function renderMarkdown(markdown) {
     token.startLine = currentLine;
     const lineCount = (token.raw.match(/\n/g) || []).length;
     token.endLine = currentLine + lineCount;
+
+    if (token.type === "list" && Array.isArray(token.items)) {
+      let itemLine = currentLine;
+      for (const item of token.items) {
+        item.startLine = itemLine;
+        const itemLines = (item.raw.match(/\n/g) || []).length;
+        item.endLine = itemLine + itemLines;
+        itemLine += Math.max(1, itemLines);
+      }
+    }
+
     currentLine += lineCount;
   }
 
