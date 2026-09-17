@@ -74,6 +74,13 @@ export function runSelfTests() {
       pass: renderMarkdown("- Item 1\n- Item 2").includes('data-source-line="1"') && renderMarkdown("- Item 1\n- Item 2").includes('data-source-line="2"'),
     },
     {
+      name: "renderMarkdown atribui data-source-line individualmente a cada linha de tabela",
+      pass: (() => {
+        const html = renderMarkdown("| A |\n|---|\n| 1 |\n| 2 |");
+        return html.includes('data-source-line="3"') && html.includes('data-source-line="4"');
+      })(),
+    },
+    {
       name: "detecta tabela consistente com sucesso",
       pass: validateMarkdownTables("| A | B |\n| --- | --- |\n| 1 | 2 |").isValid === true,
     },

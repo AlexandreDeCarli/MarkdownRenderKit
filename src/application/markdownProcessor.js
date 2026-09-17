@@ -44,7 +44,8 @@ customMarked.use({
       for (let r = 0; r < token.header.length; r++) {
         headerCells += this.tablecell(token.header[r]);
       }
-      const headerRow = this.tablerow({ text: headerCells });
+      const headerAttr = token.startLine ? ` data-source-line="${token.startLine}"` : "";
+      const headerRow = `<tr${headerAttr}>\n${headerCells}</tr>\n`;
 
       let bodyRows = "";
       for (let r = 0; r < token.rows.length; r++) {
@@ -52,7 +53,9 @@ customMarked.use({
         for (let c = 0; c < token.rows[r].length; c++) {
           rowCells += this.tablecell(token.rows[r][c]);
         }
-        bodyRows += this.tablerow({ text: rowCells });
+        const rowLine = token.startLine ? token.startLine + 2 + r : null;
+        const rowAttr = rowLine ? ` data-source-line="${rowLine}"` : "";
+        bodyRows += `<tr${rowAttr}>\n${rowCells}</tr>\n`;
       }
       if (bodyRows) {
         bodyRows = `<tbody>${bodyRows}</tbody>`;

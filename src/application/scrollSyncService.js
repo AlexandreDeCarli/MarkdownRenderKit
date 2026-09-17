@@ -38,6 +38,97 @@ export function getPaddingTop(el) {
 }
 
 /**
+ * Escapa strings para uso seguro no elemento mirror.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+let mirrorEl = null;
+
+/**
+ * Mede as posições verticais reais (Y) de cada linha no editor textarea,
+ * compensando quebras de linha automáticas (word wrapping) com exatidão de pixel.
+ *
+ * @param {HTMLTextAreaElement} editorEl
+ * @returns {Float64Array|null} Array indexado por número de linha (1-based) com o offsetTop de cada linha
+ */
+export function getEditorLineTops(editorEl) {
+  if (!editorEl || typeof window === "undefined" || !document.body) {
+    return null;
+  }
+
+  const text = editorEl.value || "";
+  if (!text) return null;
+
+  const clientWidth = editorEl.clientWidth;
+  if (!clientWidth || clientWidth <= 0) return null;
+
+  if (!mirrorEl) {
+    mirrorEl = document.createElement("div");
+    mirrorEl.setAttribute("aria-hidden", "true");
+    mirrorEl.style.position = "absolute";
+    mirrorEl.style.top = "-99999px";
+    mirrorEl.style.left = "-99999px";
+    mirrorEl.style.visibility = "hidden";
+    mirrorEl.style.pointerEvents = "none";
+    mirrorEl.style.overflow = "hidden";
+    mirrorEl.style.whiteSpace = "pre-wrap";
+    mirrorEl.style.wordBreak = "break-word";
+    mirrorEl.style.overflowWrap = "break-word";
+    document.body.appendChild(mirrorEl);
+  }
+
+  const style = window.getComputedStyle(editorEl);
+  mirrorEl.style.fontFamily = style.fontFamily;
+  mirrorEl.style.fontSize = style.fontSize;
+  mirrorEl.style.fontWeight = style.fontWeight;
+  mirrorEl.style.fontStyle = style.fontStyle;
+  mirrorEl.style.letterSpacing = style.letterSpacing;
+  mirrorEl.style.lineHeight = style.lineHeight;
+  mirrorEl.style.boxSizing = "border-box";
+  mirrorEl.style.paddingTop = "0px";
+  mirrorEl.style.paddingBottom = "0px";
+  mirrorEl.style.paddingLeft = style.paddingLeft;
+  mirrorEl.style.paddingRight = style.paddingRight;
+  mirrorEl.style.borderLeft = style.borderLeft;
+  mirrorEl.style.borderRight = style.borderRight;
+  mirrorEl.style.width = clientWidth + "px";
+
+  const lines = text.split("\n");
+  const count = lines.length;
+  mirrorEl.innerHTML = lines
+    .map((line) => `<div style="margin:0;padding:0;box-sizing:border-box;">${line ? escapeHtml(line) : "&#8203;"}</div>`)
+    .join("");
+
+  const lineTops = new Float64Array(count + 2);
+  const containerRect = mirrorEl.getBoundingClientRect();
+  const children = mirrorEl.children;
+
+  for (let i = 0; i < count; i++) {
+    const child = children[i];
+    if (child) {
+      const childRect = child.getBoundingClientRect();
+      lineTops[i + 1] = childRect.top - containerRect.top;
+    }
+  }
+
+  if (count > 0 && children[count - 1]) {
+    const lastRect = children[count - 1].getBoundingClientRect();
+    lineTops[count + 1] = lastRect.bottom - containerRect.top;
+  }
+
+  return lineTops;
+}
+
+/**
  * Constrói o mapa de mapeamento geométrico entre as linhas do Markdown e os elementos do Preview.
  * Alinha o topo de cada elemento com a linha superior visível de conteúdo.
  *
@@ -56,6 +147,9 @@ export function buildElementMap(previewContainer, editorEl) {
   const currentScrollTop = previewContainer.scrollTop;
   const previewPaddingTop = getPaddingTop(previewContainer);
 
+  // Mede os offsets verticais reais das linhas do textarea compensando quebras de linha (wrap)
+  const lineTops = getEditorLineTops(editorEl);
+
   const rawMap = [];
 
   elements.forEach((el) => {
@@ -73,8 +167,22 @@ export function buildElementMap(previewContainer, editorEl) {
     const previewHeight = el.offsetHeight || elRect.height || 20;
     const previewBottom = previewTop + previewHeight;
 
-    const editorTop = (startLine - 1) * lineHeight;
-    const editorBottom = Math.max(editorTop + lineHeight, endLine * lineHeight);
+    let editorTop;
+    let editorBottom;
+
+    if (lineTops && startLine < lineTops.length) {
+      editorTop = lineTops[startLine];
+      const endLineClamped = Math.min(endLine, lineTops.length - 2);
+      const nextLineTop = lineTops[endLineClamped + 1];
+      if (typeof nextLineTop === "number" && nextLineTop > editorTop) {
+        editorBottom = nextLineTop;
+      } else {
+        editorBottom = editorTop + lineHeight;
+      }
+    } else {
+      editorTop = (startLine - 1) * lineHeight;
+      editorBottom = Math.max(editorTop + lineHeight, endLine * lineHeight);
+    }
 
     rawMap.push({
       startLine,
