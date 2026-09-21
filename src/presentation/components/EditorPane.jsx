@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, FileEdit, Plus, Highlighter, Table } from "lucide-react";
+import { Trash2, FileEdit, Plus, Highlighter, Table, Loader2 } from "lucide-react";
 
 /**
  * Premium Left Panel: Markdown source editor text area.
@@ -9,7 +9,8 @@ import { Trash2, FileEdit, Plus, Highlighter, Table } from "lucide-react";
  *   editorRef: React.RefObject,
  *   onInsertPageBreak: () => void,
  *   onInsertHighlight: () => void,
- *   onValidateTables: () => void
+ *   onValidateTables: () => void,
+ *   isValidatingTables?: boolean
  * }} props
  */
 export default function EditorPane({
@@ -19,6 +20,7 @@ export default function EditorPane({
   onInsertPageBreak,
   onInsertHighlight,
   onValidateTables,
+  isValidatingTables = false,
 }) {
   return (
     <section className="flex w-1/2 flex-col bg-white">
@@ -53,11 +55,21 @@ export default function EditorPane({
           <button
             id="btn-validate-tables"
             onClick={onValidateTables}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+            disabled={isValidatingTables}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm disabled:opacity-75"
             title="Validar se as tabelas estão consistentes (células vs cabeçalho)"
           >
-            <Table className="h-3.5 w-3.5 text-indigo-600" />
-            <span>Verificar Tabelas</span>
+            {isValidatingTables ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 text-indigo-600 animate-spin" />
+                <span>Verificando...</span>
+              </>
+            ) : (
+              <>
+                <Table className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Verificar Tabelas</span>
+              </>
+            )}
           </button>
 
           <div className="mx-1 h-4 w-px bg-slate-200" />

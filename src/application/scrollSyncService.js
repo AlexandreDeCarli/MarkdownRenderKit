@@ -52,10 +52,20 @@ function escapeHtml(str) {
 }
 
 let mirrorEl = null;
+let cachedLineTops = null;
+let cachedText = "";
+let cachedWidth = 0;
+
+export function clearLineTopsCache() {
+  cachedLineTops = null;
+  cachedText = "";
+  cachedWidth = 0;
+}
 
 /**
  * Mede as posições verticais reais (Y) de cada linha no editor textarea,
  * compensando quebras de linha automáticas (word wrapping) com exatidão de pixel.
+ * Utiliza cache de texto/largura e offsetTop de alta performance sem layout thrashing.
  *
  * @param {HTMLTextAreaElement} editorEl
  * @returns {Float64Array|null} Array indexado por número de linha (1-based) com o offsetTop de cada linha
@@ -70,6 +80,11 @@ export function getEditorLineTops(editorEl) {
 
   const clientWidth = editorEl.clientWidth;
   if (!clientWidth || clientWidth <= 0) return null;
+
+  // Se o texto e a largura do editor não mudaram, reutiliza o mapa de linhas já calculado (0ms)
+  if (text === cachedText && clientWidth === cachedWidth && cachedLineTops) {
+    return cachedLineTops;
+  }
 
   if (!mirrorEl) {
     mirrorEl = document.createElement("div");
@@ -109,21 +124,23 @@ export function getEditorLineTops(editorEl) {
     .join("");
 
   const lineTops = new Float64Array(count + 2);
-  const containerRect = mirrorEl.getBoundingClientRect();
   const children = mirrorEl.children;
 
   for (let i = 0; i < count; i++) {
     const child = children[i];
     if (child) {
-      const childRect = child.getBoundingClientRect();
-      lineTops[i + 1] = childRect.top - containerRect.top;
+      lineTops[i + 1] = child.offsetTop;
     }
   }
 
   if (count > 0 && children[count - 1]) {
-    const lastRect = children[count - 1].getBoundingClientRect();
-    lineTops[count + 1] = lastRect.bottom - containerRect.top;
+    const lastChild = children[count - 1];
+    lineTops[count + 1] = lastChild.offsetTop + (lastChild.offsetHeight || 28);
   }
+
+  cachedLineTops = lineTops;
+  cachedText = text;
+  cachedWidth = clientWidth;
 
   return lineTops;
 }

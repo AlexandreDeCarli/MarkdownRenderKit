@@ -114,6 +114,21 @@ export function runSelfTests() {
         return customCss.includes("zoom: 0.6;");
       })(),
     },
+    {
+      name: "codeHighlightCache armazena e reutiliza blocos de código",
+      pass: (() => {
+        const md = "```js\nconst hello = 'world';\n```";
+        renderMarkdown(md);
+        return renderMarkdown(md).includes("hljs-string");
+      })(),
+    },
+    {
+      name: "buildCss inclui regras de content-visibility para alta performance",
+      pass: (() => {
+        const customCss = buildCss(defaultSettings);
+        return customCss.includes("content-visibility: auto;");
+      })(),
+    },
   ];
 
   const failed = tests.filter((test) => !test.pass);

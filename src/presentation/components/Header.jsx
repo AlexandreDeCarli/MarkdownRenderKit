@@ -1,5 +1,5 @@
 import React from "react";
-import { Copy, Check, ExternalLink, FileDown, Settings, User } from "lucide-react";
+import { Copy, Check, ExternalLink, FileDown, Settings, User, Loader2 } from "lucide-react";
 
 /**
  * Premium Frosted-Glass Header for MarkdownRenderKit in Light Theme.
@@ -10,7 +10,8 @@ import { Copy, Check, ExternalLink, FileDown, Settings, User } from "lucide-reac
  *   onToggleSettings: () => void,
  *   onToggleAbout: () => void,
  *   settingsOpen: boolean,
- *   copied: boolean
+ *   copied: boolean,
+ *   isExporting?: boolean
  * }} props
  */
 export default function Header({
@@ -21,6 +22,7 @@ export default function Header({
   onToggleAbout,
   settingsOpen,
   copied,
+  isExporting = false,
 }) {
   return (
     <header className="relative z-40 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-5 py-3 backdrop-blur-md select-none">
@@ -69,11 +71,21 @@ export default function Header({
         <button
           id="btn-export-pdf"
           onClick={onExportPdf}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 px-4 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all duration-200 cursor-pointer shadow-md shadow-slate-900/10"
+          disabled={isExporting}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-slate-950 px-4 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all duration-200 cursor-pointer shadow-md shadow-slate-900/10 disabled:opacity-75"
           title="Salvar ou Imprimir como PDF"
         >
-          <FileDown className="h-3.5 w-3.5 text-indigo-400" />
-          <span>PDF</span>
+          {isExporting ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 text-indigo-400 animate-spin" />
+              <span>Gerando...</span>
+            </>
+          ) : (
+            <>
+              <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+              <span>PDF</span>
+            </>
+          )}
         </button>
 
         <div className="mx-1 h-5 w-px bg-slate-200" />

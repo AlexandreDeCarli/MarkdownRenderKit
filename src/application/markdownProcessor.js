@@ -2,7 +2,32 @@ import { Marked } from "marked";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 
-// ── Instância e Configuração do Marked com Mapeamento de Linhas ─────────────
+// ── Cache de Sintaxe de Código e Otimizações de Desempenho ──────────────────
+
+export const codeHighlightCache = new Map();
+const MAX_HIGHLIGHT_CACHE_SIZE = 1000;
+
+export function clearHighlightCache() {
+  codeHighlightCache.clear();
+}
+
+function escapeCodeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function countNewlines(str) {
+  if (!str) return 0;
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) === 10) count++;
+  }
+  return count;
+}
 
 const customMarked = new Marked({ gfm: true, breaks: true });
 
@@ -65,17 +90,49 @@ customMarked.use({
     },
     code(token) {
       const lineAttr = formatLineAttr(token);
-      const text = token.text;
+      const text = token.text || "";
       const lang = token.lang;
+
       if (lang === "mermaid") {
-        const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const escaped = escapeCodeHtml(text);
         return `<div class="mermaid-block"${lineAttr} data-mermaid="${encodeURIComponent(text)}">${escaped}</div>\n`;
       }
+
+      const cacheKey = `${lang || ""}:${text}`;
+      if (codeHighlightCache.has(cacheKey)) {
+        const cached = codeHighlightCache.get(cacheKey);
+        return `<pre${lineAttr}><div class="code-lang-label">${cached.langLabel}</div><code class="hljs${cached.language ? ` language-${cached.language}` : ""}">${cached.highlighted}</code></pre>\n`;
+      }
+
       const language = lang && hljs.getLanguage(lang) ? lang : null;
-      const highlighted = language
-        ? hljs.highlight(text, { language }).value
-        : hljs.highlightAuto(text).value;
+      let highlighted = "";
+
+      if (language) {
+        try {
+          highlighted = hljs.highlight(text, { language }).value;
+        } catch (e) {
+          highlighted = escapeCodeHtml(text);
+        }
+      } else if (text.length < 500) {
+        // Para blocos pequenos sem linguagem, usa highlightAuto com segurança
+        try {
+          highlighted = hljs.highlightAuto(text).value;
+        } catch (e) {
+          highlighted = escapeCodeHtml(text);
+        }
+      } else {
+        // Para blocos grandes sem linguagem explícita, evita escanear 100+ linguagens com regex
+        highlighted = escapeCodeHtml(text);
+      }
+
       const langLabel = language || "";
+
+      if (codeHighlightCache.size >= MAX_HIGHLIGHT_CACHE_SIZE) {
+        const firstKey = codeHighlightCache.keys().next().value;
+        codeHighlightCache.delete(firstKey);
+      }
+      codeHighlightCache.set(cacheKey, { highlighted, language, langLabel });
+
       return `<pre${lineAttr}><div class="code-lang-label">${langLabel}</div><code class="hljs${language ? ` language-${language}` : ""}">${highlighted}</code></pre>\n`;
     },
     hr(token) {
@@ -164,14 +221,14 @@ export function renderMarkdown(markdown) {
   let currentLine = 1;
   for (const token of tokens) {
     token.startLine = currentLine;
-    const lineCount = (token.raw.match(/\n/g) || []).length;
+    const lineCount = countNewlines(token.raw);
     token.endLine = currentLine + lineCount;
 
     if (token.type === "list" && Array.isArray(token.items)) {
       let itemLine = currentLine;
       for (const item of token.items) {
         item.startLine = itemLine;
-        const itemLines = (item.raw.match(/\n/g) || []).length;
+        const itemLines = countNewlines(item.raw);
         item.endLine = itemLine + itemLines;
         itemLine += Math.max(1, itemLines);
       }

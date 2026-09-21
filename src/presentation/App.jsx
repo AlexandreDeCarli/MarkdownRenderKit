@@ -32,6 +32,11 @@ export default function App() {
     mermaidVersion,
     renderedHtml,
     previewCss,
+    // novos estados de carregamento para rotinas pesadas
+    isParsing,
+    mermaidProgress,
+    isExporting,
+    isValidatingTables,
     updateSetting,
     applyPreset,
     insertAtCursor,
@@ -63,6 +68,7 @@ export default function App() {
         onToggleAbout={() => setAboutOpen(true)}
         settingsOpen={settingsOpen}
         copied={copied}
+        isExporting={isExporting}
       />
 
       {settingsOpen && (
@@ -83,6 +89,7 @@ export default function App() {
           onInsertPageBreak={() => insertAtCursor("<!-- pagebreak -->")}
           onInsertHighlight={() => insertAtCursor("==texto destacado==")}
           onValidateTables={handleValidateTables}
+          isValidatingTables={isValidatingTables}
         />
         
         {/* Soft elegant separator line */}
@@ -90,9 +97,10 @@ export default function App() {
         
         <PreviewPane
           renderedHtml={renderedHtml}
-          mermaidVersion={mermaidVersion}
           previewRef={previewRef}
           previewContainerRef={previewContainerRef}
+          isParsing={isParsing}
+          mermaidProgress={mermaidProgress}
         />
       </main>
 

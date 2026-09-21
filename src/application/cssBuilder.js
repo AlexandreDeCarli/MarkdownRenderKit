@@ -395,6 +395,38 @@ export function buildCss(settings, forPrint = false) {
       text-align: center;
       break-inside: avoid;
       page-break-inside: avoid;
+      ${forPrint ? "" : "content-visibility: auto; contain-intrinsic-size: auto 260px;"}
+    }
+
+    ${forPrint ? "" : `
+    .formatted-document pre {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 120px;
+    }
+    `}
+
+    .mermaid-loading-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.85em;
+      font-family: inherit;
+    }
+
+    .mermaid-loading-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin-mermaid 0.8s linear infinite;
+    }
+
+    @keyframes spin-mermaid {
+      to { transform: rotate(360deg); }
     }
 
     .formatted-document .mermaid-block svg {
@@ -491,6 +523,10 @@ export function buildCss(settings, forPrint = false) {
         color: #1f2937;
         box-shadow: none;
         border-radius: 0;
+      }
+
+      .formatted-document, .formatted-document * {
+        content-visibility: visible !important;
       }
 
       h1, h2, h3, h4, h5, h6, blockquote, pre, table, img, .mermaid-block {
