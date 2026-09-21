@@ -387,7 +387,7 @@ export function buildCss(settings, forPrint = false) {
     /* ── Mermaid diagrams ── */
     .formatted-document .mermaid-block {
       margin: 0.8em 0;
-      padding: 1em 0.7em;
+      padding: 0.8em 0.6em;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--code-bg);
@@ -398,8 +398,12 @@ export function buildCss(settings, forPrint = false) {
     }
 
     .formatted-document .mermaid-block svg {
+      zoom: ${(settings.mermaidScale ?? 75) / 100};
       max-width: 100%;
       height: auto;
+      display: inline-block;
+      margin: 0 auto;
+      transition: zoom 0.15s ease-out;
     }
 
     .formatted-document hr {
@@ -489,7 +493,7 @@ export function buildCss(settings, forPrint = false) {
         border-radius: 0;
       }
 
-      h1, h2, h3, h4, h5, h6, blockquote, pre, table, img {
+      h1, h2, h3, h4, h5, h6, blockquote, pre, table, img, .mermaid-block {
         break-inside: avoid;
         page-break-inside: avoid;
       }
