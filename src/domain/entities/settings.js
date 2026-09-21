@@ -40,6 +40,7 @@ export const codeFontOptions = [
  * @property {string} flowTertiaryBorder
  * @property {string} flowLineColor
  * @property {string} flowTextColor
+ * @property {number} [mermaidScale]
  * @property {number} fontSize
  * @property {number} lineHeight
  * @property {number} pageWidth
@@ -62,7 +63,7 @@ export const defaultSettings = {
   linkColor: "#2563eb",
   pageBg: "#f8fafc",
   paperBg: "#ffffff",
-  // Flowchart / Mermaid colors
+  // Flowchart / Mermaid colors & scale
   flowPrimaryBg: "#dbeafe",
   flowPrimaryBorder: "#2563eb",
   flowSecondaryBg: "#e0e7ff",
@@ -71,6 +72,7 @@ export const defaultSettings = {
   flowTertiaryBorder: "#ca8a04",
   flowLineColor: "#64748b",
   flowTextColor: "#1e293b",
+  mermaidScale: 75,
   fontSize: 13,
   lineHeight: 1.72,
   pageWidth: 880,

@@ -1,5 +1,6 @@
 import { preprocessMarkdown, renderMarkdown } from "./markdownProcessor.js";
 import { createFullHtml } from "./htmlExporter.js";
+import { buildCss } from "./cssBuilder.js";
 import { defaultSettings } from "../domain/entities/settings.js";
 import { calculatePreviewScrollTop, calculateEditorScrollTop } from "./scrollSyncService.js";
 import { validateMarkdownTables, formatAndFixTables } from "./tableValidator.js";
@@ -104,6 +105,13 @@ export function runSelfTests() {
         const broken = "| A | B | C |\n| --- | --- | --- |\n| 1 | 2 |";
         const { fixedMarkdown } = formatAndFixTables(broken);
         return validateMarkdownTables(fixedMarkdown).isValid === true;
+      })(),
+    },
+    {
+      name: "buildCss aplica escala configurada do Mermaid SVG",
+      pass: (() => {
+        const customCss = buildCss({ ...defaultSettings, mermaidScale: 60 });
+        return customCss.includes("zoom: 0.6;");
       })(),
     },
   ];
