@@ -16,7 +16,7 @@
 - **Exportação para PDF** — gera PDFs com layout profissional, respeitando quebras de página, cabeçalhos, rodapés e marca d'água
 - **Copiar HTML** — copie o documento completo (HTML + CSS embutido) para colar em e-mails, Notion, Confluence, etc.
 - **Preview em Popup** — abra uma janela separada com o documento formatado
-- **Temas e presets** — 5 temas prontos (Editorial, Executivo Azul, Criativo Coral, Dark Elegante, Sicredi) com troca instantânea
+- **Temas e presets** — 7 temas prontos (Editorial, Executivo Azul, Criativo Coral, Dark Elegante, Sicredi, Sanofi, SoftFocus) com troca instantânea
 - **Customização total** — controle granular sobre fontes, cores, tamanhos, espaçamento e layout do PDF
 - **Destaques coloridos** — use `==texto==` para realçar trechos com cor de destaque configurável
 - **Quebras de página** — insira `<!-- pagebreak -->` para controlar a paginação no PDF
