@@ -118,4 +118,25 @@ export const presets = [
     flowLineColor: "#6b21a8",
     flowTextColor: "#1a1a1a",
   },
+  {
+    // SoftFocus — brand palette (softfocus.com.br):
+    // Cyan #00A3E4 | Tech Blue #0085D4 / #066AAB | Heading Navy #111731
+    // Soft tint #E0F4FC | Slate line #2C5878 | Accent Amber #F0A401
+    name: "SoftFocus",
+    titleColor: "#111731",
+    h2Color: "#00A3E4",
+    highlightColor: "#E0F4FC",
+    highlightTextColor: "#066AAB",
+    linkColor: "#0085D4",
+    pageBg: "#F0F4F8",
+    paperBg: "#ffffff",
+    flowPrimaryBg: "#E0F4FC",
+    flowPrimaryBorder: "#00A3E4",
+    flowSecondaryBg: "#EBF0FA",
+    flowSecondaryBorder: "#0085D4",
+    flowTertiaryBg: "#FFF6E5",
+    flowTertiaryBorder: "#F0A401",
+    flowLineColor: "#2C5878",
+    flowTextColor: "#111731",
+  },
 ];
