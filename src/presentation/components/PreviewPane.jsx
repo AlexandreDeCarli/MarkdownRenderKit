@@ -12,6 +12,16 @@ import { Eye, Loader2, Sparkles } from "lucide-react";
  *   mermaidProgress?: { isRendering: boolean, current: number, total: number }
  * }} props
  */
+const DocumentContent = React.memo(function DocumentContent({ html, previewRef }) {
+  return (
+    <article
+      ref={previewRef}
+      className="formatted-document mx-auto max-w-[800px] shadow-sm rounded-2xl bg-white border border-slate-200/40 p-10 transition-colors duration-200"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+});
+
 export default function PreviewPane({
   renderedHtml,
   previewRef,
@@ -66,11 +76,8 @@ export default function PreviewPane({
           </div>
         )}
 
-        <article
-          ref={previewRef}
-          className="formatted-document mx-auto max-w-[800px] shadow-sm rounded-2xl bg-white border border-slate-200/40 p-10 transition-colors duration-200"
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
-        />
+        {/* Document Content isolado e memoizado: nunca é destruído ou resetado por atualizações de progresso */}
+        <DocumentContent html={renderedHtml} previewRef={previewRef} />
       </div>
     </section>
   );

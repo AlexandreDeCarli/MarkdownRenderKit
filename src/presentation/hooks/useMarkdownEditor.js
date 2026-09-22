@@ -49,10 +49,14 @@ export function useMarkdownEditor() {
     mermaidVersion,
   });
 
+  const prevMarkdownRef = useRef(starterMarkdown);
+
   // Atualiza renderedHtml de forma não-bloqueante com debounce de 250ms e React 19 startTransition
   useEffect(() => {
+    if (prevMarkdownRef.current === markdown) return;
     const timer = setTimeout(() => {
       startParsingTransition(() => {
+        prevMarkdownRef.current = markdown;
         const nextHtml = renderMarkdown(markdown);
         setRenderedHtml(nextHtml);
       });
