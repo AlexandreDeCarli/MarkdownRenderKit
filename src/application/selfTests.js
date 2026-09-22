@@ -4,6 +4,7 @@ import { buildCss } from "./cssBuilder.js";
 import { defaultSettings } from "../domain/entities/settings.js";
 import { calculatePreviewScrollTop, calculateEditorScrollTop } from "./scrollSyncService.js";
 import { validateMarkdownTables, formatAndFixTables } from "./tableValidator.js";
+import { buildInfo } from "../infrastructure/buildInfo.js";
 
 /**
  * Executa os autotestes do sistema e loga resultados no console.
@@ -128,6 +129,10 @@ export function runSelfTests() {
         const customCss = buildCss(defaultSettings);
         return customCss.includes("content-visibility: auto;");
       })(),
+    },
+    {
+      name: "buildInfo possui versão e data/hora de build válidas",
+      pass: Boolean(buildInfo && buildInfo.version && buildInfo.formattedBuildTime),
     },
   ];
 
