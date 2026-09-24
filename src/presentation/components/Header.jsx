@@ -1,5 +1,5 @@
 import React from "react";
-import { Copy, Check, ExternalLink, FileDown, Settings, User, Loader2 } from "lucide-react";
+import { Copy, Check, ExternalLink, FileDown, Settings, User, Loader2, PanelLeft, Columns2, PanelRight } from "lucide-react";
 
 /**
  * Premium Frosted-Glass Header for MarkdownRenderKit in Light Theme.
@@ -11,7 +11,9 @@ import { Copy, Check, ExternalLink, FileDown, Settings, User, Loader2 } from "lu
  *   onToggleAbout: () => void,
  *   settingsOpen: boolean,
  *   copied: boolean,
- *   isExporting?: boolean
+ *   isExporting?: boolean,
+ *   layoutMode?: "split" | "editor" | "preview",
+ *   onLayoutModeChange?: (mode: "split" | "editor" | "preview") => void
  * }} props
  */
 export default function Header({
@@ -23,17 +25,64 @@ export default function Header({
   settingsOpen,
   copied,
   isExporting = false,
+  layoutMode = "split",
+  onLayoutModeChange = () => {},
 }) {
   return (
-    <header className="relative z-40 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-5 py-3 backdrop-blur-md select-none">
+    <header className="relative z-40 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-3 sm:px-5 py-2.5 sm:py-3 backdrop-blur-md select-none gap-2 overflow-x-auto custom-scrollbar">
       {/* Brand Logo and Title */}
-      <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm">
           ✦ MD→PDF
         </span>
-        <h1 className="text-lg font-black tracking-tight font-outfit bg-gradient-to-r from-slate-950 via-slate-900 to-slate-850 bg-clip-text text-transparent">
-          Markdown<span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">RenderKit</span>
+        <h1 className="text-base sm:text-lg font-black tracking-tight font-outfit bg-gradient-to-r from-slate-950 via-slate-900 to-slate-850 bg-clip-text text-transparent">
+          Markdown<span className="hidden sm:inline bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">RenderKit</span>
         </h1>
+      </div>
+
+      {/* Segmented Control de Modo de Visualização */}
+      <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/90 p-0.5 sm:p-1 shadow-inner shrink-0">
+        <button
+          id="btn-layout-editor"
+          onClick={() => onLayoutModeChange("editor")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer ${
+            layoutMode === "editor"
+              ? "bg-white text-indigo-600 shadow-sm border border-slate-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+          title="Modo Foco: Apenas Editor Markdown (Alt+1)"
+        >
+          <PanelLeft className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Editor</span>
+        </button>
+
+        <button
+          id="btn-layout-split"
+          onClick={() => onLayoutModeChange("split")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer ${
+            layoutMode === "split"
+              ? "bg-white text-indigo-600 shadow-sm border border-slate-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+          title="Modo Dividido: Lado a Lado (Alt+0)"
+        >
+          <Columns2 className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Dividido</span>
+        </button>
+
+        <button
+          id="btn-layout-preview"
+          onClick={() => onLayoutModeChange("preview")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all duration-150 cursor-pointer ${
+            layoutMode === "preview"
+              ? "bg-white text-indigo-600 shadow-sm border border-slate-200/60"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+          }`}
+          title="Modo Visualização: Apenas Documento (Alt+2)"
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">Visualização</span>
+        </button>
       </div>
 
       {/* Action Toolbar */}

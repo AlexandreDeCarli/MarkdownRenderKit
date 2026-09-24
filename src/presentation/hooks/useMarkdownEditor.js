@@ -42,6 +42,77 @@ export function useMarkdownEditor() {
   const [isExporting, setIsExporting] = useState(false);
   const [isValidatingTables, setIsValidatingTables] = useState(false);
 
+  // Modo de layout dos painéis: 'split' | 'editor' | 'preview'
+  const [layoutMode, setLayoutModeState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("markdown_layout_mode");
+      if (saved === "editor" || saved === "preview" || saved === "split") {
+        return saved;
+      }
+    } catch (e) {
+      // Ignora falhas de acesso a localStorage
+    }
+    return "split";
+  });
+
+  const setLayoutMode = useCallback((mode) => {
+    if (mode === "editor" || mode === "preview" || mode === "split") {
+      setLayoutModeState(mode);
+      try {
+        localStorage.setItem("markdown_layout_mode", mode);
+      } catch (e) {}
+    }
+  }, []);
+
+  const toggleEditorCollapse = useCallback(() => {
+    setLayoutModeState((current) => {
+      const next = current === "split" ? "preview" : "split";
+      try {
+        localStorage.setItem("markdown_layout_mode", next);
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const togglePreviewCollapse = useCallback(() => {
+    setLayoutModeState((current) => {
+      const next = current === "split" ? "editor" : "split";
+      try {
+        localStorage.setItem("markdown_layout_mode", next);
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  // Atalhos de teclado globais: Alt+1 (Editor), Alt+2 (Preview), Alt+0 (Dividido)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === "1") {
+          e.preventDefault();
+          setLayoutModeState((curr) => {
+            const next = curr === "editor" ? "split" : "editor";
+            try { localStorage.setItem("markdown_layout_mode", next); } catch (err) {}
+            return next;
+          });
+        } else if (e.key === "2") {
+          e.preventDefault();
+          setLayoutModeState((curr) => {
+            const next = curr === "preview" ? "split" : "preview";
+            try { localStorage.setItem("markdown_layout_mode", next); } catch (err) {}
+            return next;
+          });
+        } else if (e.key === "0") {
+          e.preventDefault();
+          setLayoutMode("split");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setLayoutMode]);
+
   // Hook de sincronização de rolagem com compensação para Mermaid
   const { syncEnabled, setSyncEnabled, toggleSync, rebuildMap } = useScrollSync({
     editorRef,
@@ -323,7 +394,11 @@ export function useMarkdownEditor() {
     isParsing,
     mermaidProgress,
     isExporting,
-    isValidatingTables,
+    // estado e ações de layout dos painéis
+    layoutMode,
+    setLayoutMode,
+    toggleEditorCollapse,
+    togglePreviewCollapse,
     // handlers
     toggleSync,
     rebuildMap,

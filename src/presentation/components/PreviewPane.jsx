@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Loader2, Sparkles } from "lucide-react";
+import { Eye, Loader2, Sparkles, PanelRightClose, PanelLeftOpen, Columns2 } from "lucide-react";
 
 /**
  * Premium Right Panel: Live HTML formatted preview.
@@ -9,7 +9,10 @@ import { Eye, Loader2, Sparkles } from "lucide-react";
  *   previewRef: React.RefObject,
  *   previewContainerRef: React.RefObject,
  *   isParsing?: boolean,
- *   mermaidProgress?: { isRendering: boolean, current: number, total: number }
+ *   mermaidProgress?: { isRendering: boolean, current: number, total: number },
+ *   isCollapsed?: boolean,
+ *   isOnlyVisible?: boolean,
+ *   onToggleCollapse?: () => void
  * }} props
  */
 const DocumentContent = React.memo(function DocumentContent({ html, previewRef }) {
@@ -28,32 +31,76 @@ export default function PreviewPane({
   previewContainerRef,
   isParsing = false,
   mermaidProgress = { isRendering: false, current: 0, total: 0 },
+  isCollapsed = false,
+  isOnlyVisible = false,
+  onToggleCollapse = () => {},
 }) {
   return (
-    <section className="flex w-1/2 flex-col bg-white">
+    <section
+      className={`flex flex-col bg-white min-w-0 transition-all duration-200 ${
+        isCollapsed ? "hidden" : isOnlyVisible ? "w-full flex-1" : "w-1/2 flex-1"
+      }`}
+    >
       {/* Pane Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-3 select-none">
-        <div className="flex items-center gap-2">
-          <Eye className="h-4 w-4 text-indigo-500" />
-          <h2 className="text-sm font-bold font-outfit text-slate-800 tracking-tight">Visualização Formatada</h2>
+      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 sm:px-5 py-2.5 sm:py-3 select-none gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {isOnlyVisible && (
+            <button
+              id="btn-restore-editor-left"
+              onClick={onToggleCollapse}
+              className="mr-1 inline-flex items-center gap-1.5 rounded-xl border border-indigo-200/90 bg-indigo-50/90 px-2 sm:px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm shrink-0"
+              title="Expandir editor Markdown (Alt+1 ou Alt+0)"
+            >
+              <PanelLeftOpen className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+              <span className="hidden sm:inline">Editor</span>
+            </button>
+          )}
+          <Eye className="h-4 w-4 text-indigo-500 shrink-0" />
+          <h2 className="text-xs sm:text-sm font-bold font-outfit text-slate-800 tracking-tight truncate">Visualização Formatada</h2>
         </div>
 
-        {/* Status Indicator Badge */}
-        {isParsing ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold text-amber-700 shadow-sm animate-pulse">
-            <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
-            <span>Processando Markdown...</span>
-          </span>
-        ) : mermaidProgress.isRendering ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-bold text-indigo-700 shadow-sm">
-            <Loader2 className="h-3 w-3 animate-spin text-indigo-600" />
-            <span>Diagramas Mermaid ({mermaidProgress.current}/{mermaidProgress.total})...</span>
-          </span>
-        ) : (
-          <span className="rounded-full border border-indigo-100/80 bg-indigo-50/60 px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 shadow-sm">
-            HTML + CSS Embutido
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Status Indicator Badge */}
+          {isParsing ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 sm:px-2.5 py-1 text-[10px] font-bold text-amber-700 shadow-sm animate-pulse">
+              <Loader2 className="h-3 w-3 animate-spin text-amber-600 shrink-0" />
+              <span className="hidden sm:inline">Processando...</span>
+            </span>
+          ) : mermaidProgress.isRendering ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2 sm:px-2.5 py-1 text-[10px] font-bold text-indigo-700 shadow-sm">
+              <Loader2 className="h-3 w-3 animate-spin text-indigo-600 shrink-0" />
+              <span className="hidden sm:inline">Diagramas ({mermaidProgress.current}/{mermaidProgress.total})</span>
+            </span>
+          ) : (
+            <span className="hidden sm:inline-flex rounded-full border border-indigo-100/80 bg-indigo-50/60 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 shadow-sm">
+              HTML + CSS Embutido
+            </span>
+          )}
+
+          <div className="mx-0.5 sm:mx-1 h-4 w-px bg-slate-200 shrink-0" />
+
+          {isOnlyVisible ? (
+            <button
+              id="btn-split-preview"
+              onClick={onToggleCollapse}
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/80 px-2 sm:px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+              title="Dividir tela (mostrar editor Markdown - Alt+0)"
+            >
+              <Columns2 className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+              <span className="hidden sm:inline">Dividir</span>
+            </button>
+          ) : (
+            <button
+              id="btn-collapse-preview"
+              onClick={onToggleCollapse}
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+              title="Recolher visualização (modo foco no editor - Alt+1)"
+            >
+              <PanelRightClose className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+              <span className="hidden xl:inline">Recolher</span>
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Document Preview Box */}

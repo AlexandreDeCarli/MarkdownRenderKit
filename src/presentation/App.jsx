@@ -37,6 +37,11 @@ export default function App() {
     mermaidProgress,
     isExporting,
     isValidatingTables,
+    // layout dos painéis
+    layoutMode,
+    setLayoutMode,
+    toggleEditorCollapse,
+    togglePreviewCollapse,
     updateSetting,
     applyPreset,
     insertAtCursor,
@@ -69,6 +74,8 @@ export default function App() {
         settingsOpen={settingsOpen}
         copied={copied}
         isExporting={isExporting}
+        layoutMode={layoutMode}
+        onLayoutModeChange={setLayoutMode}
       />
 
       {settingsOpen && (
@@ -90,10 +97,15 @@ export default function App() {
           onInsertHighlight={() => insertAtCursor("==texto destacado==")}
           onValidateTables={handleValidateTables}
           isValidatingTables={isValidatingTables}
+          isCollapsed={layoutMode === "preview"}
+          isOnlyVisible={layoutMode === "editor"}
+          onToggleCollapse={toggleEditorCollapse}
         />
         
-        {/* Soft elegant separator line */}
-        <div className="w-[1.5px] bg-slate-200/80 shrink-0 self-stretch" />
+        {/* Soft elegant separator line (somente no modo dividido) */}
+        {layoutMode === "split" && (
+          <div className="w-[1.5px] bg-slate-200/80 shrink-0 self-stretch" />
+        )}
         
         <PreviewPane
           renderedHtml={renderedHtml}
@@ -101,6 +113,9 @@ export default function App() {
           previewContainerRef={previewContainerRef}
           isParsing={isParsing}
           mermaidProgress={mermaidProgress}
+          isCollapsed={layoutMode === "editor"}
+          isOnlyVisible={layoutMode === "preview"}
+          onToggleCollapse={togglePreviewCollapse}
         />
       </main>
 
