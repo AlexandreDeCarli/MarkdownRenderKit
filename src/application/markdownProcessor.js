@@ -288,6 +288,7 @@ export function renderMarkdown(markdown, options = {}) {
       "loading",
       "decoding"
     ],
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|blob|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   };
 
   let sanitized = raw;
@@ -295,9 +296,9 @@ export function renderMarkdown(markdown, options = {}) {
     sanitized = DOMPurify.sanitize(raw, sanitizeOptions);
   }
 
-  // Se restoreImages foi solicitado explicitamente, ou em ambiente de testes Node.js
-  // onde o consumidor espera os dados originais no HTML retornado:
-  if (hasImages && (restoreImages || (typeof window === "undefined" && !keepVirtualized))) {
+  // Restaura sempre as imagens originais para garantir que sejam exibidas
+  // perfeitamente no navegador, popup, exportação de PDF e cópia
+  if (hasImages && tokenMap && !options.keepVirtualized) {
     sanitized = restoreBase64Images(sanitized, tokenMap);
   }
 

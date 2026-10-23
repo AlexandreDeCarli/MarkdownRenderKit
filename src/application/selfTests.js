@@ -153,7 +153,7 @@ export function runSelfTests() {
         const rawB64 = "data:image/png;base64," + "A".repeat(1200);
         const md = `# Documento\n\n![Gráfico](${rawB64})\n\nFinal do texto.`;
         const { optimizedMarkdown, hasBase64Images: hasImg, tokenMap } = virtualizeBase64Images(md, 512);
-        const isShortened = optimizedMarkdown.length < md.length && optimizedMarkdown.includes("blob:");
+        const isShortened = optimizedMarkdown.length < md.length && optimizedMarkdown.includes("renderkit-asset.local");
         const restored = restoreBase64Images(optimizedMarkdown, tokenMap);
         return hasImg && isShortened && restored === md;
       })(),

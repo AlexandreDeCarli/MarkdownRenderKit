@@ -6,17 +6,16 @@
  *
  * Princípios de Design:
  * 1. Zero Overhead para documentos normais: verificação O(1) com includes("data:image/").
- * 2. Virtualização em Blob URLs: substitui payloads gigantes de 3MB de texto por URLs curtas
- *    (ex: blob:http://... ou tokens internos), reduzindo a árvore de parsing de 40MB para ~40KB.
- * 3. Cache por Fingerprint: evita re-decodificar a mesma imagem entre edições sucessivas (0ms).
- * 4. Prevenção de Layout Thrashing: alivia a carga do analisador léxico, DOMPurify e renderizador React.
- * 5. Reversibilidade Total: permite restaurar as imagens base64 originais para cópia ou exportação independente.
+ * 2. Virtualização em tokens leves durante o parsing: substitui payloads gigantes de 3MB de texto
+ *    por URLs seguras (https://renderkit-asset.local/img/N), reduzindo o payload de 40MB para ~40KB.
+ * 3. Sanitização rápida: evita que o DOMPurify e o lexer travem escaneando milhões de caracteres.
+ * 4. Restauração transparente: reinjeta as imagens base64 originais no HTML final para que
+ *    sejam renderizadas de forma 100% nativa e confiável no navegador, popup, cópia e PDF.
  */
 
-// Cache de Blob URLs indexado por fingerprint rápido da imagem
-const blobCacheByFingerprint = new Map();
-// Mapeamento reverso para restaurar base64 a partir do Blob URL
-const dataUriByBlobUrl = new Map();
+// Cache indexado por token e por fingerprint
+const tokenByFingerprint = new Map();
+const dataUriByToken = new Map();
 
 let internalTokenCounter = 0;
 
@@ -44,90 +43,28 @@ export function getImageFingerprint(dataUri) {
 }
 
 /**
- * Converte data URI base64 em Blob binário nativo.
- * Suporta navegador (atob + Uint8Array) e Node.js (Buffer).
+ * Cria ou recupera um token seguro para a data URI fornecida.
+ * Utiliza o prefixo https://renderkit-asset.local/img/N que é universalmente
+ * aceito por analisadores Markdown e pelo DOMPurify sem risco de sanitização ou descarte.
+ *
  * @param {string} dataUri
- * @returns {Blob|null}
+ * @returns {string}
  */
-export function dataUriToBlob(dataUri) {
-  if (!dataUri || typeof dataUri !== "string") return null;
-
-  const commaIdx = dataUri.indexOf(",");
-  if (commaIdx === -1) return null;
-
-  const meta = dataUri.slice(0, commaIdx);
-  const rawBase64 = dataUri.slice(commaIdx + 1);
-  const mimeMatch = meta.match(/data:([^;]+)/);
-  const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
-
-  try {
-    // Ambiente Node.js (testes e utilitários)
-    if (typeof Buffer !== "undefined" && typeof Buffer.from === "function") {
-      const buf = Buffer.from(rawBase64.replace(/\s+/g, ""), "base64");
-      return new Blob([buf], { type: mimeType });
-    }
-
-    // Ambiente Navegador (Browser DOM)
-    if (typeof atob === "function") {
-      const cleanBase64 = rawBase64.indexOf("\n") !== -1 || rawBase64.indexOf("\r") !== -1 || rawBase64.indexOf(" ") !== -1
-        ? rawBase64.replace(/\s+/g, "")
-        : rawBase64;
-      const binaryString = atob(cleanBase64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return new Blob([bytes], { type: mimeType });
-    }
-  } catch (err) {
-    console.warn("Falha ao converter dataUri para Blob:", err);
-  }
-
-  return null;
-}
-
-/**
- * Obtém ou cria uma Blob URL para a data URI base64 fornecida.
- * Se já existir em cache (mesmo fingerprint), reutiliza instantaneamente.
- * @param {string} dataUri
- * @returns {string} Blob URL ou token interno
- */
-export function getOrCreateBlobUrl(dataUri) {
+export function getOrCreateImageToken(dataUri) {
   const fp = getImageFingerprint(dataUri);
 
-  if (blobCacheByFingerprint.has(fp)) {
-    return blobCacheByFingerprint.get(fp);
+  if (tokenByFingerprint.has(fp)) {
+    return tokenByFingerprint.get(fp);
   }
 
-  // Tenta criar ObjectURL nativo no navegador
-  if (
-    typeof window !== "undefined" &&
-    typeof URL !== "undefined" &&
-    typeof URL.createObjectURL === "function"
-  ) {
-    try {
-      const blob = dataUriToBlob(dataUri);
-      if (blob) {
-        const blobUrl = URL.createObjectURL(blob);
-        blobCacheByFingerprint.set(fp, blobUrl);
-        dataUriByBlobUrl.set(blobUrl, dataUri);
-        return blobUrl;
-      }
-    } catch (e) {
-      console.warn("Erro ao invocar createObjectURL:", e);
-    }
-  }
-
-  // Fallback para Node.js ou caso createObjectURL não esteja disponível
-  const internalToken = `blob:mock-image/${++internalTokenCounter}`;
-  blobCacheByFingerprint.set(fp, internalToken);
-  dataUriByBlobUrl.set(internalToken, dataUri);
-  return internalToken;
+  const token = `https://renderkit-asset.local/img/${internalTokenCounter++}`;
+  tokenByFingerprint.set(fp, token);
+  dataUriByToken.set(token, dataUri);
+  return token;
 }
 
 /**
- * Substitui URIs base64 pesadas por URLs otimizadas (Blob URLs)
+ * Substitui URIs base64 pesadas por URLs leves temporárias
  * antes do processamento no lexer e no DOMPurify.
  * Preserva quebras de linha exatas para não alterar contagem de linhas do editor.
  *
@@ -150,9 +87,9 @@ export function virtualizeBase64Images(markdown, minThreshold = 512) {
       return match;
     }
 
-    const url = getOrCreateBlobUrl(match);
-    tokenMap.set(url, match);
-    return url;
+    const token = getOrCreateImageToken(match);
+    tokenMap.set(token, match);
+    return token;
   });
 
   return {
@@ -163,8 +100,8 @@ export function virtualizeBase64Images(markdown, minThreshold = 512) {
 }
 
 /**
- * Restaura imagens base64 originais em uma string HTML que contém Blob URLs ou tokens.
- * Usado para exportação, cópia para área de transferência e geração de HTML autônomo.
+ * Restaura imagens base64 originais em uma string HTML que contém tokens temporários.
+ * Garante que as imagens sejam renderizadas com 100% de integridade e fidelidade.
  *
  * @param {string} html
  * @param {Map<string, string>} [localTokenMap]
@@ -172,36 +109,57 @@ export function virtualizeBase64Images(markdown, minThreshold = 512) {
  */
 export function restoreBase64Images(html, localTokenMap = null) {
   if (!html || typeof html !== "string") return "";
-  if (!html.includes("blob:")) return html;
 
-  // Regex para encontrar URLs blob: geradas
-  return html.replace(/blob:[^"'\s>)]+/g, (blobUrl) => {
-    if (localTokenMap && localTokenMap.has(blobUrl)) {
-      return localTokenMap.get(blobUrl);
-    }
-    if (dataUriByBlobUrl.has(blobUrl)) {
-      return dataUriByBlobUrl.get(blobUrl);
-    }
-    return blobUrl;
-  });
+  let result = html;
+
+  // 1. Restaura tokens https://renderkit-asset.local/img/N
+  if (result.includes("renderkit-asset.local")) {
+    result = result.replace(/https:\/\/renderkit-asset\.local\/img\/(\d+)/g, (match) => {
+      if (localTokenMap && localTokenMap.has(match)) {
+        return localTokenMap.get(match);
+      }
+      if (dataUriByToken.has(match)) {
+        return dataUriByToken.get(match);
+      }
+      return match;
+    });
+  }
+
+  // 2. Restaura tokens de fallback se houver (@@BASE64_IMG_TOKEN_N@@)
+  if (result.includes("@@BASE64_IMG_TOKEN_")) {
+    result = result.replace(/@@BASE64_IMG_TOKEN_(\d+)@@/g, (match) => {
+      if (localTokenMap && localTokenMap.has(match)) {
+        return localTokenMap.get(match);
+      }
+      if (dataUriByToken.has(match)) {
+        return dataUriByToken.get(match);
+      }
+      return match;
+    });
+  }
+
+  // 3. Restaura tokens com prefixo blob: caso existam
+  if (result.includes("blob:")) {
+    result = result.replace(/blob:[^"'\s>)]+/g, (blobUrl) => {
+      if (localTokenMap && localTokenMap.has(blobUrl)) {
+        return localTokenMap.get(blobUrl);
+      }
+      if (dataUriByToken.has(blobUrl)) {
+        return dataUriByToken.get(blobUrl);
+      }
+      return blobUrl;
+    });
+  }
+
+  return result;
 }
 
 /**
- * Limpa o cache de Blob URLs e revoga os objetos na memória do navegador
- * para evitar vazamentos de memória (memory leaks).
+ * Limpa o cache de tokens de imagens.
  */
 export function clearBase64ImageCache() {
-  if (typeof window !== "undefined" && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
-    for (const blobUrl of blobCacheByFingerprint.values()) {
-      if (blobUrl.startsWith("blob:") && !blobUrl.startsWith("blob:mock-image/")) {
-        try {
-          URL.revokeObjectURL(blobUrl);
-        } catch (e) {}
-      }
-    }
-  }
-  blobCacheByFingerprint.clear();
-  dataUriByBlobUrl.clear();
+  tokenByFingerprint.clear();
+  dataUriByToken.clear();
   internalTokenCounter = 0;
 }
 
@@ -211,6 +169,6 @@ export function clearBase64ImageCache() {
  */
 export function getBase64CacheStats() {
   return {
-    cachedImagesCount: blobCacheByFingerprint.size,
+    cachedImagesCount: tokenByFingerprint.size,
   };
 }
