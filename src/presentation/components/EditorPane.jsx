@@ -16,7 +16,7 @@ import { Trash2, FileEdit, Plus, Highlighter, Table, Loader2, PanelLeftClose, Co
  *   onToggleCollapse?: () => void
  * }} props
  */
-export default function EditorPane({
+export default React.memo(function EditorPane({
   markdown,
   onChange,
   editorRef,
@@ -126,9 +126,12 @@ export default function EditorPane({
         value={markdown}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
         className="flex-1 resize-none bg-[#0B0F19] p-6 font-mono text-[13px] leading-7 text-slate-100 outline-none placeholder:text-slate-600 custom-scrollbar shadow-inner"
         placeholder="Digite ou cole seu Markdown aqui..."
       />
     </section>
   );
-}
+});

@@ -270,7 +270,12 @@ export function useMarkdownEditor() {
   async function copyHtml() {
     setIsExporting(true);
     try {
-      const fullHtml = createFullHtml({ bodyHtml: renderedHtml, settings, title: "Documento formatado" });
+      const fullHtml = createFullHtml({
+        bodyHtml: renderedHtml,
+        settings,
+        title: "Documento formatado",
+        standalone: true,
+      });
       await copyToClipboard(fullHtml);
       setCopied(true);
       showNotice("HTML completo copiado para a área de transferência.");

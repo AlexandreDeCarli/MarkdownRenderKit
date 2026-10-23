@@ -5,6 +5,11 @@ import { defaultSettings } from "../domain/entities/settings.js";
 import { calculatePreviewScrollTop, calculateEditorScrollTop } from "./scrollSyncService.js";
 import { validateMarkdownTables, formatAndFixTables } from "./tableValidator.js";
 import { buildInfo } from "../infrastructure/buildInfo.js";
+import {
+  hasBase64Images,
+  virtualizeBase64Images,
+  restoreBase64Images,
+} from "./base64ImageManager.js";
 
 /**
  * Executa os autotestes do sistema e loga resultados no console.
@@ -133,6 +138,43 @@ export function runSelfTests() {
     {
       name: "buildInfo possui versão e data/hora de build válidas",
       pass: Boolean(buildInfo && buildInfo.version && buildInfo.formattedBuildTime),
+    },
+    {
+      name: "hasBase64Images detecta imagens em data URI com precisão",
+      pass: (() => {
+        const without = "Texto comum sem imagens";
+        const withImg = "Texto com ![Foto](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==)";
+        return !hasBase64Images(without) && hasBase64Images(withImg);
+      })(),
+    },
+    {
+      name: "virtualizeBase64Images e restoreBase64Images preservam integridade 100%",
+      pass: (() => {
+        const rawB64 = "data:image/png;base64," + "A".repeat(1200);
+        const md = `# Documento\n\n![Gráfico](${rawB64})\n\nFinal do texto.`;
+        const { optimizedMarkdown, hasBase64Images: hasImg, tokenMap } = virtualizeBase64Images(md, 512);
+        const isShortened = optimizedMarkdown.length < md.length && optimizedMarkdown.includes("blob:");
+        const restored = restoreBase64Images(optimizedMarkdown, tokenMap);
+        return hasImg && isShortened && restored === md;
+      })(),
+    },
+    {
+      name: "renderMarkdown inclui atributos loading=lazy e decoding=async nas tags img",
+      pass: (() => {
+        const md = "![Foto](https://exemplo.com/imagem.png)";
+        const html = renderMarkdown(md);
+        return html.includes('loading="lazy"') && html.includes('decoding="async"');
+      })(),
+    },
+    {
+      name: "createFullHtml com standalone=true restaura imagens base64 para portabilidade",
+      pass: (() => {
+        const rawB64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        const md = `![Pixel](${rawB64})`;
+        const virtualizedHtml = renderMarkdown(md, { keepVirtualized: true });
+        const standaloneExport = createFullHtml({ bodyHtml: virtualizedHtml, settings: defaultSettings, standalone: true });
+        return standaloneExport.includes(rawB64);
+      })(),
     },
   ];
 

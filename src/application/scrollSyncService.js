@@ -55,6 +55,36 @@ let mirrorEl = null;
 let cachedLineTops = null;
 let cachedText = "";
 let cachedWidth = 0;
+let testMeasureSpan = null;
+
+function getMonospaceCharWidth(style) {
+  if (typeof document === "undefined" || !document.body) {
+    const fontSize = parseFloat(style.fontSize) || 13;
+    return fontSize * 0.6;
+  }
+  if (!testMeasureSpan) {
+    testMeasureSpan = document.createElement("span");
+    testMeasureSpan.setAttribute("aria-hidden", "true");
+    testMeasureSpan.textContent = "MMMMMMMMMM";
+    testMeasureSpan.style.position = "absolute";
+    testMeasureSpan.style.visibility = "hidden";
+    testMeasureSpan.style.top = "-99999px";
+    testMeasureSpan.style.left = "-99999px";
+    testMeasureSpan.style.padding = "0";
+    testMeasureSpan.style.border = "0";
+    testMeasureSpan.style.whiteSpace = "pre";
+    document.body.appendChild(testMeasureSpan);
+  }
+  testMeasureSpan.style.fontFamily = style.fontFamily;
+  testMeasureSpan.style.fontSize = style.fontSize;
+  testMeasureSpan.style.letterSpacing = style.letterSpacing;
+  const width = testMeasureSpan.getBoundingClientRect().width;
+  if (width > 0) {
+    return width / 10;
+  }
+  const fontSize = parseFloat(style.fontSize) || 13;
+  return fontSize * 0.6;
+}
 
 export function clearLineTopsCache() {
   cachedLineTops = null;
@@ -66,6 +96,8 @@ export function clearLineTopsCache() {
  * Mede as posições verticais reais (Y) de cada linha no editor textarea,
  * compensando quebras de linha automáticas (word wrapping) com exatidão de pixel.
  * Utiliza cache de texto/largura e offsetTop de alta performance sem layout thrashing.
+ * Para documentos gigantes com base64, utiliza interpolação geométrica de largura fixa (O(1))
+ * para evitar que o HarfBuzz/layout engine do navegador trave com milhões de caracteres.
  *
  * @param {HTMLTextAreaElement} editorEl
  * @returns {Float64Array|null} Array indexado por número de linha (1-based) com o offsetTop de cada linha
@@ -82,7 +114,7 @@ export function getEditorLineTops(editorEl) {
   if (!clientWidth || clientWidth <= 0) return null;
 
   // Se o texto e a largura do editor não mudaram, reutiliza o mapa de linhas já calculado (0ms)
-  if (text === cachedText && clientWidth === cachedWidth && cachedLineTops) {
+  if (text.length === cachedText.length && text === cachedText && clientWidth === cachedWidth && cachedLineTops) {
     return cachedLineTops;
   }
 
@@ -119,9 +151,33 @@ export function getEditorLineTops(editorEl) {
 
   const lines = text.split("\n");
   const count = lines.length;
-  mirrorEl.innerHTML = lines
-    .map((line) => `<div style="margin:0;padding:0;box-sizing:border-box;">${line ? escapeHtml(line) : "&#8203;"}</div>`)
-    .join("");
+  const isLargeBase64Doc = text.length > 50000 && text.includes("data:image/");
+
+  if (isLargeBase64Doc) {
+    const charWidth = getMonospaceCharWidth(style);
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+    const paddingRight = parseFloat(style.paddingRight) || 0;
+    const contentWidth = Math.max(10, clientWidth - paddingLeft - paddingRight);
+    const charsPerLine = Math.max(1, Math.floor(contentWidth / charWidth));
+    const lineHeight = parseFloat(style.lineHeight) || 28;
+
+    const htmlParts = new Array(count);
+    for (let i = 0; i < count; i++) {
+      const line = lines[i];
+      if (line.length > 1000 && line.includes("data:image/")) {
+        const wrappedRows = Math.max(1, Math.ceil(line.length / charsPerLine));
+        const estHeight = wrappedRows * lineHeight;
+        htmlParts[i] = `<div style="margin:0;padding:0;box-sizing:border-box;height:${estHeight}px;">&#8203;</div>`;
+      } else {
+        htmlParts[i] = `<div style="margin:0;padding:0;box-sizing:border-box;">${line ? escapeHtml(line) : "&#8203;"}</div>`;
+      }
+    }
+    mirrorEl.innerHTML = htmlParts.join("");
+  } else {
+    mirrorEl.innerHTML = lines
+      .map((line) => `<div style="margin:0;padding:0;box-sizing:border-box;">${line ? escapeHtml(line) : "&#8203;"}</div>`)
+      .join("");
+  }
 
   const lineTops = new Float64Array(count + 2);
   const children = mirrorEl.children;

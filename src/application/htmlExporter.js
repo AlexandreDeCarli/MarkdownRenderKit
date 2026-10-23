@@ -1,5 +1,6 @@
 import { buildCss } from "./cssBuilder.js";
 import { buildMermaidThemeVars } from "./mermaidService.js";
+import { restoreBase64Images } from "./base64ImageManager.js";
 
 /**
  * Escapa caracteres HTML especiais.
@@ -17,10 +18,11 @@ export function escapeHtml(value) {
 
 /**
  * Gera o HTML completo do documento para exportar ou abrir em popup.
- * @param {{ bodyHtml: string, settings: Object, title?: string, includeActions?: boolean }} params
+ * @param {{ bodyHtml: string, settings: Object, title?: string, includeActions?: boolean, standalone?: boolean }} params
  * @returns {string}
  */
-export function createFullHtml({ bodyHtml, settings, title = "Documento formatado", includeActions = false }) {
+export function createFullHtml({ bodyHtml, settings, title = "Documento formatado", includeActions = false, standalone = false }) {
+  const finalBodyHtml = standalone ? restoreBase64Images(bodyHtml) : bodyHtml;
   const css = buildCss(settings, false);
   const printCss = buildCss(settings, true);
   const darkPaper = settings.paperBg.toLowerCase() === "#0f172a" || settings.paperBg.toLowerCase() === "#020617";
@@ -67,7 +69,7 @@ export function createFullHtml({ bodyHtml, settings, title = "Documento formatad
       <span class="document-name">${escapeHtml(settings.documentName || "")}</span>
     </div>
   ` : ""}
-  <main class="formatted-document">${bodyHtml}</main>
+  <main class="formatted-document">${finalBodyHtml}</main>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async function() {

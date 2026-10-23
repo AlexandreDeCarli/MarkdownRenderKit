@@ -25,3 +25,6 @@ npm-debug.log*
 
 # MacOS
 .DS_Store
+
+# Test files / Large docs
+dossie_com_imagens_base64.md

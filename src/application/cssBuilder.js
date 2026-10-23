@@ -446,9 +446,11 @@ export function buildCss(settings, forPrint = false) {
 
     .formatted-document img {
       max-width: 100%;
+      height: auto;
       border-radius: 10px;
       margin: 0.8em 0;
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+      ${forPrint ? "" : "content-visibility: auto; contain-intrinsic-size: auto 300px;"}
     }
 
     .page-break {

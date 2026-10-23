@@ -1,6 +1,11 @@
 import { Marked } from "marked";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
+import {
+  virtualizeBase64Images,
+  restoreBase64Images,
+  hasBase64Images,
+} from "./base64ImageManager.js";
 
 // ── Cache de Sintaxe de Código e Otimizações de Desempenho ──────────────────
 
@@ -144,6 +149,13 @@ customMarked.use({
         return `<div data-source-line="${token.startLine}" data-line-end="${token.endLine || token.startLine}">${token.text}</div>\n`;
       }
       return token.text;
+    },
+    image(token) {
+      const lineAttr = formatLineAttr(token);
+      const href = token.href || "";
+      const titleAttr = token.title ? ` title="${escapeCodeHtml(token.title)}"` : "";
+      const alt = token.text || "";
+      return `<img src="${href}" alt="${escapeCodeHtml(alt)}"${titleAttr}${lineAttr} loading="lazy" decoding="async" />\n`;
     }
   }
 });
@@ -166,8 +178,12 @@ export function normalizeMarkdown(markdown) {
  * @returns {{ protectedText: string, blocks: string[] }}
  */
 export function protectCodeBlocks(markdown) {
+  const normalized = normalizeMarkdown(markdown);
+  if (!normalized.includes("```")) {
+    return { protectedText: normalized, blocks: [] };
+  }
   const blocks = [];
-  const protectedText = normalizeMarkdown(markdown).replace(/```[\s\S]*?```/g, (match) => {
+  const protectedText = normalized.replace(/```[\s\S]*?```/g, (match) => {
     const token = `@@CODE_BLOCK_${blocks.length}@@`;
     blocks.push(match);
     return token;
@@ -176,16 +192,14 @@ export function protectCodeBlocks(markdown) {
 }
 
 /**
- * Restaura os blocos de código previamente protegidos.
+ * Restaura os blocos de código previamente protegidos em passada única O(N).
  * @param {string} markdown
  * @param {string[]} blocks
  * @returns {string}
  */
 export function restoreCodeBlocks(markdown, blocks) {
-  return blocks.reduce(
-    (current, block, index) => current.replace(`@@CODE_BLOCK_${index}@@`, block),
-    markdown
-  );
+  if (!blocks || blocks.length === 0) return markdown;
+  return markdown.replace(/@@CODE_BLOCK_(\d+)@@/g, (_, id) => blocks[Number(id)] ?? _);
 }
 
 /**
@@ -196,25 +210,46 @@ export function restoreCodeBlocks(markdown, blocks) {
  * @returns {string}
  */
 export function preprocessMarkdown(markdown) {
+  const hasMarks = typeof markdown === "string" && markdown.includes("==");
+  const hasPageBreak =
+    typeof markdown === "string" &&
+    (markdown.includes("<!--") || markdown.includes("---page---") || markdown.includes(":::pagebreak"));
+
+  if (!hasMarks && !hasPageBreak && !markdown.includes("```")) {
+    return normalizeMarkdown(markdown);
+  }
+
   const { protectedText, blocks } = protectCodeBlocks(markdown);
 
-  const processed = protectedText
-    .replace(/==([^=\n][\s\S]*?[^=\n])==/g, "<mark>$1</mark>")
-    .replace(
+  let processed = protectedText;
+  if (hasMarks) {
+    processed = processed.replace(/==([^=\n][\s\S]*?[^=\n])==/g, "<mark>$1</mark>");
+  }
+  if (hasPageBreak) {
+    processed = processed.replace(
       /(<!--\s*pagebreak\s*-->|---page---|:::pagebreak)/gi,
       '<div class="page-break"></div>'
     );
+  }
 
   return restoreCodeBlocks(processed, blocks);
 }
 
 /**
  * Converte markdown em HTML seguro (DOMPurify sanitizado) com marcadores de linha.
+ * Suporta virtualização de imagens base64 de alta performance.
+ *
  * @param {string} markdown
+ * @param {{ restoreImages?: boolean, keepVirtualized?: boolean }} [options]
  * @returns {string}
  */
-export function renderMarkdown(markdown) {
-  const preprocessed = preprocessMarkdown(markdown);
+export function renderMarkdown(markdown, options = {}) {
+  const { restoreImages = false, keepVirtualized = false } = options;
+
+  // 1. Virtualização de imagens base64: se contiver data:image/, virtualiza
+  const { optimizedMarkdown, hasBase64Images: hasImages, tokenMap } = virtualizeBase64Images(markdown);
+
+  const preprocessed = preprocessMarkdown(optimizedMarkdown);
   const tokens = customMarked.lexer(preprocessed);
 
   // Calcula startLine e endLine para cada token com base nas quebras de linha
@@ -249,15 +284,24 @@ export function renderMarkdown(markdown) {
       "class",
       "data-mermaid",
       "data-source-line",
-      "data-line-end"
+      "data-line-end",
+      "loading",
+      "decoding"
     ],
   };
 
+  let sanitized = raw;
   if (DOMPurify && typeof DOMPurify.sanitize === "function") {
-    return DOMPurify.sanitize(raw, sanitizeOptions);
+    sanitized = DOMPurify.sanitize(raw, sanitizeOptions);
   }
 
-  return raw;
+  // Se restoreImages foi solicitado explicitamente, ou em ambiente de testes Node.js
+  // onde o consumidor espera os dados originais no HTML retornado:
+  if (hasImages && (restoreImages || (typeof window === "undefined" && !keepVirtualized))) {
+    sanitized = restoreBase64Images(sanitized, tokenMap);
+  }
+
+  return sanitized;
 }
 
 
