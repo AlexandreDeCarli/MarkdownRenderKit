@@ -3,7 +3,7 @@
  * Injetado automaticamente pelo Vite via `define` em tempo de compilação.
  */
 export const buildInfo = (typeof __APP_BUILD_INFO__ !== "undefined" && __APP_BUILD_INFO__) || {
-  version: "1.0.0",
+  version: "1.1.0",
   buildTime: new Date().toISOString(),
   formattedBuildTime: new Date().toLocaleString("pt-BR", {
     timeZone: "America/Sao_Paulo",
